@@ -25,6 +25,7 @@ class DBList(tk.Frame):
 		for i, j in enumerate(column_names):
 			columns[j] = (DBColumn(self, i))
 			columns[j].pack(side='left')
+		tk.Frame.pack()
 	def add(self, cols):
 		# Cols is a dictionary.
 		if len(columns) != len(cols):
@@ -37,9 +38,11 @@ class DBList(tk.Frame):
 		row_dictionary = {}
 		for i, j in enumerate(rows):
 			self.add({column_names[h]:k for h, k in enumerate(j)})
-def showDB(db_location):
+def showDB(db_location, table_name):
 	db = sqlite3.connect(db_location)
 	c = db.cursor()
+	root = tk.Tk()
+	DBList(root, db, table_name)
 	
 if True: # Change this to be if it's opened as it's own program, so it doesn't run if imported. 
-	showDB("test.db")
+	showDB("test.db", 'test')
