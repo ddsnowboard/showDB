@@ -4,19 +4,28 @@ import WillsLib
 # This is the version of WillsLib as of 7-20-14, commit hash 3f5c782b8523602173ef649cd55452627ae9155e
 # In 2.4, there is iteritems(), in 3 there is just items(). *sigh*
 class DBColumn(tk.Frame):
-	def __init__(self, root, name, index):
-		# Add the command to select all the other columns when you click one. 
-		tk.Frame.__init__(self, root, command=
+	def __init__(self, root, name):
+		tk.Frame.__init__(self, root)
 		self.name = name
-		self.index = index
+		self.root = root
 		tk.Label(self, text=name).pack()
-		list = tk.Listbox(self)
-		list.pack()
-		self.curselection = list.curselection
-		self.config = list.config
-		self.insert = list.insert
+		self.list = tk.Listbox(self, exportselection = False)
+		self.list.bind('<ButtonRelease-1>', self.select)
+		self.list.pack()
+		self.list.curselection
+		self.config = self.list.config
+		self.insert = self.list.insert
 		# Make methods to put stuff in the list. 
 		# Also, how to I access the tk.Frame methods?
+	def select(self, event):
+		selection = self.list.curselection()
+		if selection:
+			for i, j in self.root.columns.items():
+				if not i == self.name:
+					j.highlight(selection[0])
+	def highlight(self, selection):
+		self.list.selection_clear(0, self.list.size()-1)
+		self.list.selection_set(selection)
 class DBList(tk.Frame):
 	def __init__(self, root, connection, table_name):
 		self.connection = connection
@@ -25,7 +34,7 @@ class DBList(tk.Frame):
 		self.column_names = [i[1] for i in self.connection.cursor().execute("pragma table_info(%s)" % self.table_name)]
 		tk.Frame.__init__(self, root)
 		for i, j in enumerate(self.column_names):
-			self.columns[j] = (DBColumn(self, j, i))
+			self.columns[j] = (DBColumn(self, j))
 			self.columns[j].pack(side='left')
 		self.populate()
 	def add(self, cols):
