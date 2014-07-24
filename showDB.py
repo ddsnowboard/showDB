@@ -1,7 +1,7 @@
 import tkinter as tk
 import sqlite3
 import WillsLib
-# This is the version of WillsLib as of 7-20-14, commit hash 3f5c782b8523602173ef649cd55452627ae9155e
+# This is the version of WillsLib as of 7-23-14, commit hash ab98d9e78b030e1fc21b3facf3561d3ed21777e3
 # In 2.4, there is iteritems(), in 3 there is just items(). *sigh*
 class DBColumn(tk.Frame):
 	def __init__(self, root, name):
@@ -50,7 +50,6 @@ class DBList(tk.Frame):
 		for i, j in enumerate(rows):
 			self.add({self.column_names[h]:k for h, k in enumerate(j)})
 def showDB(db_location, table_name):
-	global DB
 	db = sqlite3.connect(db_location)
 	c = db.cursor()
 	root = tk.Tk()
@@ -58,7 +57,7 @@ def showDB(db_location, table_name):
 	DB.pack()
 	root.mainloop()
 	
-if True: # Change this to be if it's opened as it's own program, so it doesn't run if imported.
+if __name__ == "__main__":
 	db = sqlite3.connect('test.db')
 	c = db.cursor()
 	showDB("test.db", 'test')

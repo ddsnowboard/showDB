@@ -4,7 +4,9 @@ import tkinter as tk
 # Instead of this 'if params' business, just have a DBget() to get a specific 
 # one and a DBselect to get all of them. 
 # Also, it would be cool to have a table object that is really pythonic instead of
-# all annoying and sql-y. 
+# all annoying and sql-y.
+
+# Update this to be able to use a dictionary. 
 def DBinsert(connection, table_name, vals):
 	s = 'insert into '+table_name+' VALUES (?'
 	for i in range(len(vals)-1):
@@ -31,8 +33,7 @@ def DBselect(connection, table_name, columns, which):
 	return out
 def DBcreate(connection, table_name, columns):
 	s = 'create table '+table_name+'('
-	for i in columns:
-		s+=i
+	s+= ', '.join(columns)
 	s+=');'
 	connection.cursor().execute(s)
 	connection.commit()
