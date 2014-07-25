@@ -9,7 +9,8 @@ class DBColumn(tk.Frame):
 		self.name = name
 		self.root = root
 		tk.Label(self, text=name).pack()
-		self.list = tk.Listbox(self, exportselection = False)
+		self.list = tk.Listbox(self, exportselection = False, yscrollcommand=root.scrollbar.set)
+		self.list.bind("<MouseWheel>", root.OnMouseWheel)
 		self.list.bind('<ButtonRelease-1>', self.select)
 		self.list.pack()
 		self.list.curselection
@@ -33,10 +34,20 @@ class DBList(tk.Frame):
 		self.table_name = table_name
 		self.column_names = [i[1] for i in self.connection.cursor().execute("pragma table_info(%s)" % self.table_name)]
 		tk.Frame.__init__(self, root)
+		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
 		for i, j in enumerate(self.column_names):
 			self.columns[j] = (DBColumn(self, j))
 			self.columns[j].pack(side='left')
+		self.scrollbar.pack(side='left', fill = 'y')
 		self.populate()
+	def scroll(self, *args):
+		for i in self.columns.values():
+			i.list.yview(*args)
+	def OnMouseWheel(self, event):
+		# Borrowed from https://stackoverflow.com/a/4068275
+		for i in self.columns.values():
+			i.list.yview("scroll", event.delta,"units")
+		return "break"
 	def add(self, cols):
 		# Cols is a dictionary.
 		if len(self.columns) != len(cols):
