@@ -18,17 +18,17 @@ def DBselect(connection, table_name, columns, which):
 	out = []
 	if columns == 'all':
 		columns = ['*']
-	elif columns is list:
+	elif columns is str:
+		columns = [str(columns)]
+	else:
 		for i, j in enumerate(columns):
 			columns[i] = str(j)
-	else:
-		columns = [str(columns)]
 	if which == 'all':
-		for i in connection.cursor().execute('select '+', '.join(columns) +' from '+table_name):
+		for i in connection.cursor().execute('select %s from %s;' % (','.join(columns),table_name)):
 			out.append(i)
 	else:
 		strings = [i + " = ?" for i in sorted(which.keys())]
-		for i in connection.cursor().execute("select %s from %s WHERE %s" % (', '.join(columns), table_name, ' and '.join(strings)), tuple([i for i in sorted(which.values())])):
+		for i in connection.cursor().execute("select %s from %s WHERE %s" % (','.join(columns), table_name, ' and '.join(strings)), tuple([i for i in sorted(which.values())])):
 			out.append(i)
 	return out
 def DBcreate(connection, table_name, columns):
