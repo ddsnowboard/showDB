@@ -9,8 +9,7 @@ class DBColumn(tk.Frame):
 		self.name = name
 		self.root = root
 		tk.Label(self, text=name).pack()
-		self.list = tk.Listbox(self, exportselection = False, yscrollcommand=root.scrollbar.set)
-		self.list.bind("<MouseWheel>", root.OnMouseWheel)
+		self.list = tk.Listbox(self, exportselection = False, yscrollcommand=self.scroll)
 		self.list.bind('<ButtonRelease-1>', self.select)
 		self.list.pack()
 		self.list.curselection
@@ -27,6 +26,12 @@ class DBColumn(tk.Frame):
 	def highlight(self, selection):
 		self.list.selection_clear(0, self.list.size()-1)
 		self.list.selection_set(selection)
+	def scroll(self, *args):
+		print(args)
+		for i in self.root.columns.values():
+			if not i == self:
+				i.list.yview_moveto(args[0])
+		self.root.scrollbar.set(*args)
 class DBList(tk.Frame):
 	def __init__(self, root, connection, table_name):
 		self.connection = connection
