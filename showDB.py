@@ -62,7 +62,10 @@ class DBList(tk.Frame):
 		row_dictionary = {}
 		for i, j in enumerate(rows):
 			self.add({self.column_names[h]:k for h, k in enumerate(j)})
-def closeCols(picked_columns, column_picker, db, table_name):
+def closeCols(picked_columns, column_picker, db, table_name, write):
+	if write:
+		with open('showDB.config', 'a') as f:
+			f.write("%s\n%s" % (table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
 	cols = [i for i in picked_columns.keys() if picked_columns[i].get() == 1]
 	column_picker.destroy()
 	if cols == []:
@@ -71,23 +74,42 @@ def closeCols(picked_columns, column_picker, db, table_name):
 	DB = DBList(root, db, table_name, cols)
 	DB.pack()
 	root.mainloop()
+def getCols(table_name, cursor, root):
+	picked_columns = {}
+	cursor.execute("pragma table_info(%s)" % table_name)
+	tk.Label(root, text="Pick the columns you want to show").pack()
+	checkboxes = []
+	for i in cursor.fetchall():
+		picked_columns[i[1]] = tk.IntVar()
+		checkboxes.append(tk.Checkbutton(root, text=str(i[1]), variable=picked_columns[i[1]]))
+	for i in checkboxes:
+		i.pack()
+	ok_button = tk.Button(root, text="Done", command=lambda: closeCols(picked_columns, root, db, table_name, True))
+	ok_button.pack()
+	root.mainloop()
 def showDB(db_location, table_name):
 	db = sqlite3.connect(db_location)
 	column_picker = tk.Tk()
 	picked_columns = {}
 	checkboxes = []
 	c = db.cursor()
-	c.execute("pragma table_info(%s)" % table_name)
-	tk.Label(column_picker, text="Pick the columns you want to show").pack()
-	for i in c.fetchall():
-		picked_columns[i[1]] = tk.IntVar()
-		checkboxes.append(tk.Checkbutton(column_picker, text=str(i[1]), variable=picked_columns[i[1]]))
-	for i in checkboxes:
-		i.pack()
-	ok_button = tk.Button(column_picker, text="Done", command=lambda: closeCols(picked_columns, column_picker, db, table_name))
-	ok_button.pack()
-	column_picker.mainloop()
-
+	try:
+		f = open("showDB.config", 'r')
+		l = list(f)
+		f.close()
+	except FileNotFoundError:
+		l = []
+	if not l:
+		getCols(table_name, c, column_picker)
+	else:
+		for i, j in enumerate(l):
+			if j.find(table_name) != -1:
+				cols = {p:tk.IntVar() for p in l[i+1].split(',')}
+				for i in cols.values():
+					i.set(1)
+				closeCols(cols, column_picker, db, table_name, False)
+				return
+		getCols(table_name, c, column_picker)
 if __name__ == "__main__":
 	db = sqlite3.connect('test.db')
 	c = db.cursor()
