@@ -16,8 +16,6 @@ class DBColumn(tk.Frame):
 		self.list.curselection
 		self.config = self.list.config
 		self.insert = self.list.insert
-		# Make methods to put stuff in the list. 
-		# Also, how to I access the tk.Frame methods?
 	def select(self, event):
 		selection = self.list.curselection()
 		if selection:
