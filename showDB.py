@@ -9,8 +9,7 @@ class DBColumn(tk.Frame):
 		self.name = name
 		self.root = root
 		tk.Label(self, text=name).pack()
-		self.list = tk.Listbox(self, exportselection = False, yscrollcommand=root.scrollbar.set)
-		self.list.bind("<MouseWheel>", root.OnMouseWheel)
+		self.list = tk.Listbox(self, exportselection = False, yscrollcommand=self.scroll)
 		self.list.bind('<ButtonRelease-1>', self.select)
 		self.list.pack()
 		self.list.curselection
@@ -25,12 +24,17 @@ class DBColumn(tk.Frame):
 	def highlight(self, selection):
 		self.list.selection_clear(0, self.list.size()-1)
 		self.list.selection_set(selection)
+	def scroll(self, *args):
+		for i in self.root.columns.values():
+			if not i == self:
+				i.list.yview_moveto(args[0])
+		self.root.scrollbar.set(*args)
 class DBList(tk.Frame):
-	def __init__(self, root, connection, table_name):
+	def __init__(self, root, connection, table_name, cols):
 		self.connection = connection
 		self.columns = {}
 		self.table_name = table_name
-		self.column_names = [i[1] for i in self.connection.cursor().execute("pragma table_info(%s)" % self.table_name)]
+		self.column_names = cols
 		tk.Frame.__init__(self, root)
 		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
 		for i, j in enumerate(self.column_names):
@@ -54,18 +58,58 @@ class DBList(tk.Frame):
 			for i, j in cols.items():
 				self.columns[i].insert('end', j)
 	def populate(self):
-		rows = WillsLib.DBselect(self.connection, self.table_name, 'all', 'all')
+		rows = WillsLib.DBselect(self.connection, self.table_name, self.column_names, 'all')
 		row_dictionary = {}
 		for i, j in enumerate(rows):
 			self.add({self.column_names[h]:k for h, k in enumerate(j)})
-def showDB(db_location, table_name):
-	db = sqlite3.connect(db_location)
-	c = db.cursor()
+def closeCols(picked_columns, column_picker, db, table_name, write):
+	if write:
+		with open('showDB.config', 'a') as f:
+			f.write("%s\n%s" % (table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
+	cols = [i for i in picked_columns.keys() if picked_columns[i].get() == 1]
+	column_picker.destroy()
+	if cols == []:
+		return
 	root = tk.Tk()
-	DB = DBList(root, db, table_name)
+	DB = DBList(root, db, table_name, cols)
 	DB.pack()
 	root.mainloop()
-	
+def getCols(table_name, cursor, root):
+	picked_columns = {}
+	cursor.execute("pragma table_info(%s)" % table_name)
+	tk.Label(root, text="Pick the columns you want to show").pack()
+	checkboxes = []
+	for i in cursor.fetchall():
+		picked_columns[i[1]] = tk.IntVar()
+		checkboxes.append(tk.Checkbutton(root, text=str(i[1]), variable=picked_columns[i[1]]))
+	for i in checkboxes:
+		i.pack()
+	ok_button = tk.Button(root, text="Done", command=lambda: closeCols(picked_columns, root, db, table_name, True))
+	ok_button.pack()
+	root.mainloop()
+def showDB(db_location, table_name):
+	db = sqlite3.connect(db_location)
+	column_picker = tk.Tk()
+	picked_columns = {}
+	checkboxes = []
+	c = db.cursor()
+	try:
+		f = open("showDB.config", 'r')
+		l = list(f)
+		f.close()
+	except FileNotFoundError:
+		l = []
+	if not l:
+		getCols(table_name, c, column_picker)
+	else:
+		for i, j in enumerate(l):
+			if j.find(table_name) != -1:
+				cols = {p:tk.IntVar() for p in l[i+1].split(',')}
+				for i in cols.values():
+					i.set(1)
+				closeCols(cols, column_picker, db, table_name, False)
+				return
+		getCols(table_name, c, column_picker)
 if __name__ == "__main__":
 	db = sqlite3.connect('test.db')
 	c = db.cursor()
