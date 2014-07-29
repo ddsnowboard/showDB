@@ -3,22 +3,18 @@ import sqlite3
 import WillsLib
 # In 2.4, there is iteritems(), in 3 there is just items(). *sigh*
 def switchColumns(base):
-	with open('showDB.config', 'w+') as f:
+	with open('showDB.config', 'r') as f:
 		l = list(f)
 		for i, j in enumerate(l):
-			if j == root.table_name:
+			if j == sqlite3.table_name:
 				l.pop(i)
 				l.pop(i)
 				break
-		# f.clear()
-		# How do I do this? I guess I have to wait to finish this part. Alas!
-		# What I need to do is clear the whole file, and then rewrite it without
-		# the two lines I just popped a moment ago, so it will see "hey, there's no 
-		# entry for this! Let's make one!
+	with open("showDB.config", 'w') as f:
 		for i in l:
 			f.write(i)
-		showDB(base.table_name, sqlite3.location)
 		base.destroy()
+		showDB(sqlite3.location, sqlite3.table_name)
 class DBColumn(tk.Frame):
 	def __init__(self, root, name):
 		tk.Frame.__init__(self, root)
@@ -51,7 +47,7 @@ class DBList(tk.Frame):
 		self.columns = {}
 		self.table_name = table_name
 		self.column_names = cols
-		self.switch_button = tk.Button(root, text='Switch columns', command=lambda:switchColumns(self))
+		self.switch_button = tk.Button(root, text='Switch columns', command=lambda:switchColumns(root))
 		self.switch_button.pack()
 		tk.Frame.__init__(self, root)
 		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
@@ -108,6 +104,7 @@ def getCols(table_name, cursor, root):
 def showDB(db_location, table_name):
 	db = sqlite3.connect(db_location)
 	sqlite3.location = db_location
+	sqlite3.table_name = table_name
 	column_picker = tk.Tk()
 	picked_columns = {}
 	checkboxes = []
