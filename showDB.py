@@ -15,6 +15,21 @@ def switchColumns(base):
 			f.write(i)
 		base.destroy()
 		showDB(sqlite3.location, sqlite3.table_name)
+class addButton(tk.Button):
+	def __init__(self, root):
+		tk.Button(self, root, text='Add', command=self.add)
+# pack left, finish delete and edit buttons. Use WillsLib!
+class buttonBox(tk.Frame):
+	def __init__(self, root, connection):
+		tk.Frame.__init__(self, root)
+		self.add = addButton(self)
+		self.edit = editButton(self)
+		self.delete = deleteButton(self)
+		for i in [self.add, self.edit, self.delete]:
+			i.pack()
+	def activate(self):
+		for i in [self.edit, self.delete]:
+			i.config(state="normal")		
 class DBColumn(tk.Frame):
 	def __init__(self, root, name):
 		tk.Frame.__init__(self, root)
@@ -30,6 +45,7 @@ class DBColumn(tk.Frame):
 	def select(self, event):
 		selection = self.list.curselection()
 		if selection:
+			root.buttons.activate()
 			for i, j in self.root.columns.items():
 				if not i == self.name:
 					j.highlight(selection[0])
@@ -41,6 +57,7 @@ class DBColumn(tk.Frame):
 			if not i == self:
 				i.list.yview_moveto(args[0])
 		self.root.scrollbar.set(*args)
+	
 class DBList(tk.Frame):
 	def __init__(self, root, connection, table_name, cols):
 		self.connection = connection
@@ -49,7 +66,7 @@ class DBList(tk.Frame):
 		self.column_names = cols
 		self.switch_button = tk.Button(root, text='Switch columns', command=lambda:switchColumns(root))
 		self.switch_button.pack()
-		tk.Frame.__init__(self, root)
+		tk.Frame.__init__(self, root, command=self.click)
 		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
 		for i, j in enumerate(self.column_names):
 			self.columns[j] = (DBColumn(self, j))
