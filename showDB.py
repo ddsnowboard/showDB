@@ -38,17 +38,45 @@ class addButton(tk.Button):
 	def __init__(self, root):
 		tk.Button.__init__(self, root, text='Add', command=self.add)
 		self.root = root
-		self.pack(side='left')
 	def add(self):
 		addWindow(self.root.root)
-# pack left, finish delete and edit buttons. Use WillsLib!
+class deleteButton(tk.Button):
+	def __init__(self, root):
+		tk.Button.__init__(self, root, text='Delete Selected', state='disabled', command=self.delete)
+		self.root = root
+		self.base_list = self.root.root
+	def delete(self):
+		# Add a dialog box asking if you really want to delete?
+		if self.base_list.getSelected():
+			WillsLib.DBdelete(self.base_list.connection, sqlite3.table_name, self.base_list.getSelected())
+			self.base_list.populate()
+class editButton(tk.Button):
+	def __init__(self, root):
+		tk.Button.__init__(self, root, text='Edit Selected', command=self.edit, state='disabled')
+		self.root = root
+		self.base_list = self.root.root
+	def edit(self):
+		if self.base_list.getSelected():
+			window = tk.Tk()
+			frames = []
+			boxes = []
+			for i in self.base_list.column_names:
+				frames.append(tk.Frame(window))
+				tk.Label(frames[-1], text=i+': ').pack(side='left')
+				boxes.append(tk.Entry(frames[-1]))
+				boxes[-1].insert('end', self.base_list.columns[i].list.get(self.base_list.columns[i].list.curselection()))
+				boxes[-1].pack(side='left')
+				frames[-1].pack()
 class buttonBox(tk.Frame):
 	def __init__(self, root, connection):
 		tk.Frame.__init__(self, root)
 		self.root = root
 		self.add = addButton(self)
-		# self.edit = editButton(self)
-		# self.delete = deleteButton(self)
+		self.edit = editButton(self)
+		self.delete = deleteButton(self)
+		self.add.pack(side='left')
+		self.delete.pack(side='left')
+		self.edit.pack(side='left')
 	def activate(self):
 		for i in [self.edit, self.delete]:
 			i.config(state="normal")		
@@ -61,14 +89,13 @@ class DBColumn(tk.Frame):
 		self.list = tk.Listbox(self, exportselection = False, yscrollcommand=self.scroll)
 		self.list.bind('<ButtonRelease-1>', self.select)
 		self.list.pack()
-		self.list.curselection
 		self.config = self.list.config
 		self.insert = self.list.insert
 	def select(self, event):
 		selection = self.list.curselection()
 		if selection:
 			# This line will activate the buttons when something is clicked, but it's not done yet. 
-			# root.buttons.activate()
+			self.root.button_box.activate()
 			for i, j in self.root.columns.items():
 				if not i == self.name:
 					j.highlight(selection[0])
@@ -120,6 +147,14 @@ class DBList(tk.Frame):
 			i.list.delete(0, 'end')
 		for i, j in enumerate(rows):
 			self.add({self.column_names[h]:k for h, k in enumerate(j)})
+	def getSelected(self):
+		o = {}
+		for i, j in self.columns.items():
+			o[i] = j.list.get(j.list.curselection())
+		if o:
+			return o
+		else:
+			return None
 def closeCols(picked_columns, column_picker, db, table_name, write):
 	if write:
 		with open('showDB.config', 'a') as f:
