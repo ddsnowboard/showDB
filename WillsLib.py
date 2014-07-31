@@ -18,8 +18,8 @@ def DBselect(connection, table_name, columns, which):
 	out = []
 	if columns == 'all':
 		columns = ['*']
-	elif columns is str:
-		columns = [str(columns)]
+	elif type(columns) == str:
+		columns = [columns]
 	else:
 		for i, j in enumerate(columns):
 			columns[i] = str(j)

@@ -59,18 +59,32 @@ class editButton(tk.Button):
 		if self.base_list.getSelected():
 			index = self.base_list.columns[list(self.base_list.columns.keys())[0]].list.curselection()
 			window = tk.Tk()
-			frames = []
-			boxes = []
+			self.frames = []
+			self.labels = []
+			self.boxes = []
 			c = self.base_list.connection.cursor()
 			c.execute('pragma table_info(%s)' % sqlite3.table_name)
 			for i in [i[1] for i in c.fetchall()]:
-				frames.append(tk.Frame(window))
-				tk.Label(frames[-1], text=i+': ').pack(side='left')
-				boxes.append(tk.Entry(frames[-1]))
-				print(self.base_list.columns[list(self.base_list.columns.keys())[-1]])
-				boxes[-1].insert('end', WillsLib.DBselect(self.base_list.connection, sqlite3.table_name, i, {i:self.base_list.columns[list(self.base_list.columns.keys())[-1]].list.get(index)}))
-				boxes[-1].pack(side='left')
-				frames[-1].pack()
+				self.frames.append(tk.Frame(window))
+				self.labels.append(tk.Label(self.frames[-1], text=i+': '))
+				self.labels[-1].pack(side='left')
+				self.boxes.append(tk.Entry(self.frames[-1]))
+				self.boxes[-1].insert('end', WillsLib.DBselect(self.base_list.connection, sqlite3.table_name, i, {list(self.base_list.columns.keys())[-1]:self.base_list.columns[list(self.base_list.columns.keys())[-1]].list.get(index)})[0])
+				self.boxes[-1].pack(side='left')
+				self.frames[-1].pack()
+			choices = tk.Frame(window)
+			ok = tk.Button(choices, text='OK', command=lambda: self.finish(index, window))
+			cancel = tk.Button(choices, text='Cancel', command=window.destroy)
+			ok.pack(side='left')
+			cancel.pack(side='left')
+			choices.pack()
+	def finish(self, index, window):
+		set = {}
+		for i, j in enumerate(self.labels):
+			set[j.config()['text'][4].replace(': ', '')] = self.boxes[i].get()
+		WillsLib.DBupdate(self.base_list.connection, sqlite3.table_name, set, {list(sorted(self.base_list.columns.keys()))[-1]:self.base_list.columns[list(sorted(self.base_list.columns.keys()))[-1]].list.get(index)})
+		self.base_list.populate()
+		window.destroy()
 class buttonBox(tk.Frame):
 	def __init__(self, root, connection):
 		tk.Frame.__init__(self, root)
