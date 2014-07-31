@@ -15,43 +15,43 @@ def switchColumns(base):
 			f.write(i)
 		base.destroy()
 		showDB(sqlite3.location, sqlite3.table_name)
-class addWindow(tk.Tk):
-	def __init__(self, base_list):
-		tk.Tk.__init__(self)
-		self.base_list = base_list
-		self.frames = []
-		self.boxes = []
-		c = self.base_list.connection.cursor()
-		c.execute('pragma table_info(%s)' % sqlite3.table_name)
-		for i in [i[1] for i in c.fetchall()]:
-			self.frames.append(tk.Frame(self))
-			tk.Label(self.frames[-1], text=str(i)+': ').pack(side='left')
-			self.boxes.append(tk.Entry(self.frames[-1]))
-			self.boxes[-1].pack(side='left')
-			self.frames[-1].pack()
-		tk.Button(self, text='OK', command=self.add).pack()
-	def add(self):
-		WillsLib.DBinsert(self.base_list.connection, sqlite3.table_name, [i.get() for i in self.boxes])
-		self.base_list.populate()
-		self.destroy()
-class addButton(tk.Button):
-	def __init__(self, root):
-		tk.Button.__init__(self, root, text='Add', command=self.add)
-		self.root = root
-		self.pack(side='left')
-	def add(self):
-		addWindow(self.root.root)
+# class addWindow(tk.Tk):
+	# def __init__(self, base_list):
+		# tk.Tk.__init__(self)
+		# self.base_list = base_list
+		# self.frames = []
+		# self.boxes = []
+		# c = self.base_list.connection.cursor()
+		# c.execute('pragma table_info(%s)' % sqlite3.table_name)
+		# for i in [i[1] for i in c.fetchall()]:
+			# self.frames.append(tk.Frame(self))
+			# tk.Label(self.frames[-1], text=str(i)+': ').pack(side='left')
+			# self.boxes.append(tk.Entry(self.frames[-1]))
+			# self.boxes[-1].pack(side='left')
+			# self.frames[-1].pack()
+		# tk.Button(self, text='OK', command=self.add).pack()
+	# def add(self):
+		# WillsLib.DBinsert(self.base_list.connection, sqlite3.table_name, [i.get() for i in self.boxes])
+		# self.base_list.populate()
+		# self.destroy()
+# class addButton(tk.Button):
+	# def __init__(self, root):
+		# tk.Button.__init__(self, root, text='Add', command=self.add)
+		# self.root = root
+		# self.pack(side='left')
+	# def add(self):
+		# addWindow(self.root.root)
 # pack left, finish delete and edit buttons. Use WillsLib!
-class buttonBox(tk.Frame):
-	def __init__(self, root, connection):
-		tk.Frame.__init__(self, root)
-		self.root = root
-		self.add = addButton(self)
+# class buttonBox(tk.Frame):
+	# def __init__(self, root, connection):
+		# tk.Frame.__init__(self, root)
+		# self.root = root
+		# self.add = addButton(self)
 		# self.edit = editButton(self)
 		# self.delete = deleteButton(self)
-	def activate(self):
-		for i in [self.edit, self.delete]:
-			i.config(state="normal")		
+	# def activate(self):
+		# for i in [self.edit, self.delete]:
+			# i.config(state="normal")		
 class DBColumn(tk.Frame):
 	def __init__(self, root, name):
 		tk.Frame.__init__(self, root)
@@ -89,8 +89,8 @@ class DBList(tk.Frame):
 		self.table_name = table_name
 		self.column_names = cols
 		self.switch_button = tk.Button(root, text='Switch columns', command=lambda:switchColumns(root))
-		self.button_box = buttonBox(self, self.connection)
-		self.button_box.pack()
+		# self.button_box = buttonBox(self, self.connection)
+		# self.button_box.pack()
 		self.switch_button.pack()
 		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
 		for i, j in enumerate(self.column_names):
