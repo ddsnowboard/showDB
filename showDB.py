@@ -57,14 +57,18 @@ class editButton(tk.Button):
 		self.base_list = self.root.root
 	def edit(self):
 		if self.base_list.getSelected():
+			index = self.base_list.columns[list(self.base_list.columns.keys())[0]].list.curselection()
 			window = tk.Tk()
 			frames = []
 			boxes = []
-			for i in self.base_list.column_names:
+			c = self.base_list.connection.cursor()
+			c.execute('pragma table_info(%s)' % sqlite3.table_name)
+			for i in [i[1] for i in c.fetchall()]:
 				frames.append(tk.Frame(window))
 				tk.Label(frames[-1], text=i+': ').pack(side='left')
 				boxes.append(tk.Entry(frames[-1]))
-				boxes[-1].insert('end', self.base_list.columns[i].list.get(self.base_list.columns[i].list.curselection()))
+				print(self.base_list.columns[list(self.base_list.columns.keys())[-1]])
+				boxes[-1].insert('end', WillsLib.DBselect(self.base_list.connection, sqlite3.table_name, i, {i:self.base_list.columns[list(self.base_list.columns.keys())[-1]].list.get(index)}))
 				boxes[-1].pack(side='left')
 				frames[-1].pack()
 class buttonBox(tk.Frame):
