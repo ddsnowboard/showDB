@@ -21,34 +21,85 @@ class addWindow(tk.Tk):
 		self.base_list = base_list
 		self.frames = []
 		self.boxes = []
+		self.labels = []
 		c = self.base_list.connection.cursor()
 		c.execute('pragma table_info(%s)' % sqlite3.table_name)
-		for i in [i[1] for i in c.fetchall()]:
+		for i in sorted([i[1] for i in c.fetchall()]):
 			self.frames.append(tk.Frame(self))
-			tk.Label(self.frames[-1], text=str(i)+': ').pack(side='left')
+			self.labels.append(tk.Label(self.frames[-1], text=str(i)+': '))
+			self.labels[-1].pack(side='left')
 			self.boxes.append(tk.Entry(self.frames[-1]))
 			self.boxes[-1].pack(side='left')
 			self.frames[-1].pack()
 		tk.Button(self, text='OK', command=self.add).pack()
 	def add(self):
-		WillsLib.DBinsert(self.base_list.connection, sqlite3.table_name, [i.get() for i in self.boxes])
+		d = {}
+		for i in range(len(self.frames)):
+			d[self.labels[i].config()['text'][4].replace(': ', '')] = self.boxes[i].get()
+		WillsLib.DBinsert(self.base_list.connection, sqlite3.table_name, d)
 		self.base_list.populate()
 		self.destroy()
 class addButton(tk.Button):
 	def __init__(self, root):
 		tk.Button.__init__(self, root, text='Add', command=self.add)
 		self.root = root
-		self.pack(side='left')
 	def add(self):
 		addWindow(self.root.root)
-# pack left, finish delete and edit buttons. Use WillsLib!
+class deleteButton(tk.Button):
+	def __init__(self, root):
+		tk.Button.__init__(self, root, text='Delete Selected', state='disabled', command=self.delete)
+		self.root = root
+		self.base_list = self.root.root
+	def delete(self):
+		# Add a dialog box asking if you really want to delete?
+		if self.base_list.getSelected():
+			WillsLib.DBdelete(self.base_list.connection, sqlite3.table_name, self.base_list.getSelected())
+			self.base_list.populate()
+class editButton(tk.Button):
+	def __init__(self, root):
+		tk.Button.__init__(self, root, text='Edit Selected', command=self.edit, state='disabled')
+		self.root = root
+		self.base_list = self.root.root
+	def edit(self):
+		if self.base_list.getSelected():
+			index = self.base_list.columns[list(self.base_list.columns.keys())[0]].list.curselection()
+			window = tk.Tk()
+			self.frames = []
+			self.labels = []
+			self.boxes = []
+			c = self.base_list.connection.cursor()
+			c.execute('pragma table_info(%s)' % sqlite3.table_name)
+			for i in sorted([i[1] for i in c.fetchall()]):
+				self.frames.append(tk.Frame(window))
+				self.labels.append(tk.Label(self.frames[-1], text=i+': '))
+				self.labels[-1].pack(side='left')
+				self.boxes.append(tk.Entry(self.frames[-1]))
+				self.boxes[-1].insert('end', WillsLib.DBselect(self.base_list.connection, sqlite3.table_name, i, {list(self.base_list.columns.keys())[-1]:self.base_list.columns[list(self.base_list.columns.keys())[-1]].list.get(index)})[0])
+				self.boxes[-1].pack(side='left')
+				self.frames[-1].pack()
+			choices = tk.Frame(window)
+			ok = tk.Button(choices, text='OK', command=lambda: self.finish(index, window))
+			cancel = tk.Button(choices, text='Cancel', command=window.destroy)
+			ok.pack(side='left')
+			cancel.pack(side='left')
+			choices.pack()
+	def finish(self, index, window):
+		set = {}
+		for i, j in enumerate(self.labels):
+			set[j.config()['text'][4].replace(': ', '')] = self.boxes[i].get()
+		WillsLib.DBupdate(self.base_list.connection, sqlite3.table_name, set, {list(self.base_list.columns.keys())[-1]:self.base_list.columns[list(self.base_list.columns.keys())[-1]].list.get(index)})
+		self.base_list.populate()
+		window.destroy()
 class buttonBox(tk.Frame):
 	def __init__(self, root, connection):
 		tk.Frame.__init__(self, root)
 		self.root = root
 		self.add = addButton(self)
-		# self.edit = editButton(self)
-		# self.delete = deleteButton(self)
+		self.edit = editButton(self)
+		self.delete = deleteButton(self)
+		self.add.pack(side='left')
+		self.delete.pack(side='left')
+		self.edit.pack(side='left')
 	def activate(self):
 		for i in [self.edit, self.delete]:
 			i.config(state="normal")		
@@ -61,14 +112,13 @@ class DBColumn(tk.Frame):
 		self.list = tk.Listbox(self, exportselection = False, yscrollcommand=self.scroll)
 		self.list.bind('<ButtonRelease-1>', self.select)
 		self.list.pack()
-		self.list.curselection
 		self.config = self.list.config
 		self.insert = self.list.insert
 	def select(self, event):
 		selection = self.list.curselection()
 		if selection:
 			# This line will activate the buttons when something is clicked, but it's not done yet. 
-			# root.buttons.activate()
+			self.root.button_box.activate()
 			for i, j in self.root.columns.items():
 				if not i == self.name:
 					j.highlight(selection[0])
@@ -93,7 +143,7 @@ class DBList(tk.Frame):
 		self.button_box.pack()
 		self.switch_button.pack()
 		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
-		for i, j in enumerate(self.column_names):
+		for i, j in enumerate(sorted(self.column_names)):
 			self.columns[j] = (DBColumn(self, j))
 			self.columns[j].pack(side='left')
 		self.scrollbar.pack(side='left', fill = 'y')
@@ -120,10 +170,21 @@ class DBList(tk.Frame):
 			i.list.delete(0, 'end')
 		for i, j in enumerate(rows):
 			self.add({self.column_names[h]:k for h, k in enumerate(j)})
+	def getSelected(self):
+		o = {}
+		for i, j in self.columns.items():
+			try:
+				o[i] = j.list.get(j.list.curselection())
+			except tk._tkinter.TclError:
+				return None
+		if o:
+			return o
+		else:
+			return None
 def closeCols(picked_columns, column_picker, db, table_name, write):
 	if write:
 		with open('showDB.config', 'a') as f:
-			f.write("%s\n%s" % (table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
+			f.write("%s\n%s" % (table_name, ','.join(sorted([i for i, j in picked_columns.items() if j.get() == 1]))))
 	cols = [i for i in picked_columns.keys() if picked_columns[i].get() == 1]
 	column_picker.destroy()
 	if cols == []:
@@ -164,9 +225,14 @@ def showDB(db_location, table_name):
 	else:
 		for i, j in enumerate(l):
 			if j.find(table_name) != -1:
-				cols = {p:tk.IntVar() for p in l[i+1].split(',')}
-				for i in cols.values():
-					i.set(1)
+				c.execute("pragma table_info(%s)" % sqlite3.table_name)
+				cols = {p[1]:tk.IntVar() for p in c.fetchall()}
+				for m, p in cols.items():
+					try:
+						l[i+1].split(',').index(m) 
+						p.set(1)
+					except ValueError:
+						p.set(0)
 				closeCols(cols, column_picker, db, table_name, False)
 				return
 		getCols(table_name, c, column_picker)
