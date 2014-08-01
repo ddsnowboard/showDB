@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter.filedialog import askopenfilename
 import sqlite3
 import WillsLib
 # In 2.4, there is iteritems(), in 3 there is just items(). *sigh*
@@ -239,4 +240,4 @@ def showDB(db_location, table_name):
 if __name__ == "__main__":
 	db = sqlite3.connect('test.db')
 	c = db.cursor()
-	showDB("test.db", 'test')
+	showDB(askopenfilename(), 'test')
