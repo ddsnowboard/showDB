@@ -21,17 +21,22 @@ class addWindow(tk.Tk):
 		self.base_list = base_list
 		self.frames = []
 		self.boxes = []
+		self.labels = []
 		c = self.base_list.connection.cursor()
 		c.execute('pragma table_info(%s)' % sqlite3.table_name)
-		for i in [i[1] for i in c.fetchall()]:
+		for i in sorted([i[1] for i in c.fetchall()]):
 			self.frames.append(tk.Frame(self))
-			tk.Label(self.frames[-1], text=str(i)+': ').pack(side='left')
+			self.labels.append(tk.Label(self.frames[-1], text=str(i)+': '))
+			self.labels[-1].pack(side='left')
 			self.boxes.append(tk.Entry(self.frames[-1]))
 			self.boxes[-1].pack(side='left')
 			self.frames[-1].pack()
 		tk.Button(self, text='OK', command=self.add).pack()
 	def add(self):
-		WillsLib.DBinsert(self.base_list.connection, sqlite3.table_name, [i.get() for i in self.boxes])
+		d = {}
+		for i in range(len(self.frames)):
+			d[self.labels[i].config()['text'][4].replace(': ', '')] = self.boxes[i].get()
+		WillsLib.DBinsert(self.base_list.connection, sqlite3.table_name, d)
 		self.base_list.populate()
 		self.destroy()
 class addButton(tk.Button):
@@ -64,7 +69,7 @@ class editButton(tk.Button):
 			self.boxes = []
 			c = self.base_list.connection.cursor()
 			c.execute('pragma table_info(%s)' % sqlite3.table_name)
-			for i in [i[1] for i in c.fetchall()]:
+			for i in sorted([i[1] for i in c.fetchall()]):
 				self.frames.append(tk.Frame(window))
 				self.labels.append(tk.Label(self.frames[-1], text=i+': '))
 				self.labels[-1].pack(side='left')
@@ -82,7 +87,7 @@ class editButton(tk.Button):
 		set = {}
 		for i, j in enumerate(self.labels):
 			set[j.config()['text'][4].replace(': ', '')] = self.boxes[i].get()
-		WillsLib.DBupdate(self.base_list.connection, sqlite3.table_name, set, {list(sorted(self.base_list.columns.keys()))[-1]:self.base_list.columns[list(sorted(self.base_list.columns.keys()))[-1]].list.get(index)})
+		WillsLib.DBupdate(self.base_list.connection, sqlite3.table_name, set, {list(self.base_list.columns.keys())[-1]:self.base_list.columns[list(self.base_list.columns.keys())[-1]].list.get(index)})
 		self.base_list.populate()
 		window.destroy()
 class buttonBox(tk.Frame):
@@ -168,7 +173,10 @@ class DBList(tk.Frame):
 	def getSelected(self):
 		o = {}
 		for i, j in self.columns.items():
-			o[i] = j.list.get(j.list.curselection())
+			try:
+				o[i] = j.list.get(j.list.curselection())
+			except tk._tkinter.TclError:
+				return None
 		if o:
 			return o
 		else:
