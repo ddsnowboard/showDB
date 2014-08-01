@@ -138,7 +138,7 @@ class DBList(tk.Frame):
 		self.button_box.pack()
 		self.switch_button.pack()
 		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
-		for i, j in enumerate(self.column_names):
+		for i, j in enumerate(sorted(self.column_names)):
 			self.columns[j] = (DBColumn(self, j))
 			self.columns[j].pack(side='left')
 		self.scrollbar.pack(side='left', fill = 'y')
@@ -176,7 +176,7 @@ class DBList(tk.Frame):
 def closeCols(picked_columns, column_picker, db, table_name, write):
 	if write:
 		with open('showDB.config', 'a') as f:
-			f.write("%s\n%s" % (table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
+			f.write("%s\n%s" % (table_name, ','.join(sorted([i for i, j in picked_columns.items() if j.get() == 1]))))
 	cols = [i for i in picked_columns.keys() if picked_columns[i].get() == 1]
 	column_picker.destroy()
 	if cols == []:
@@ -217,9 +217,14 @@ def showDB(db_location, table_name):
 	else:
 		for i, j in enumerate(l):
 			if j.find(table_name) != -1:
-				cols = {p:tk.IntVar() for p in l[i+1].split(',')}
-				for i in cols.values():
-					i.set(1)
+				c.execute("pragma table_info(%s)" % sqlite3.table_name)
+				cols = {p[1]:tk.IntVar() for p in c.fetchall()}
+				for m, p in cols.items():
+					try:
+						l[i+1].split(',').index(m) 
+						p.set(1)
+					except ValueError:
+						p.set(0)
 				closeCols(cols, column_picker, db, table_name, False)
 				return
 		getCols(table_name, c, column_picker)
