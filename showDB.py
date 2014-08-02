@@ -238,6 +238,11 @@ def showDB(db_location, table_name):
 				return
 		getCols(table_name, c, column_picker)
 if __name__ == "__main__":
-	db = sqlite3.connect('test.db')
-	c = db.cursor()
-	showDB(askopenfilename(), 'test')
+	location = ''
+	start = tk.Tk()
+	tk.Label(text='What is the name of your table?').pack()
+	box = tk.Entry(start)
+	box.pack()
+	tk.Button(start, text='OK', command=lambda: showDB(location, box.get())).pack()
+	location = askopenfilename(defaultextension='.db', title="Choose your database", parent=start, filetypes=[('Database Files', '.db'), ('All files', '*')])
+	start.mainloop()
