@@ -1,9 +1,9 @@
 showDB
 ======
 
-Shows a sqlite3 database visually. Soon, it will probably have the capability to edit the database, but right now
-I'm just focusing on showing. It will have the ability to run on any database, with the help of a file picker dialog, 
-and it will be able to be run as a program in itself, or copied to the same directory as your own program, imported, and 
-run that way, and maybe even from the console with a command for the target database. You'll be able to choose which rows of
-the database are shown, and it will save it in some sort of config file for later. It'll open the same way as last time, 
-but you'll be able to override this and open a new database or edit the columns shown. 
+Shows a sqlite3 database visually. It can also do some rather rudementary editing. You can pick any database you want and any columns you want from that database, and you can switch whenever, but it will remember the columns between occasions. You can run it as a standalone program, or use it as a module with just one method, which I'll talk about right now.
+
+
+######showDB(location, DB_name)
+
+Give the file location of the database and it's name, and it'll show it in a tkinter GUI. Pretty simple. Might add option to programmatically pick columns soon, but for now there's a GUI for that too. 
