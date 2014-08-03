@@ -1,5 +1,10 @@
-import tkinter as tk
-from tkinter.filedialog import askopenfilename
+try:
+	import tkinter as tk
+	from tkinter.filedialog import askopenfilename
+except ImportError:
+	import Tkinter as tk
+	from tkFileDialog import askopenfilename
+	# dict.items = dict.iteritems
 import sqlite3
 import WillsLib
 # In 2.4, there is iteritems(), in 3 there is just items(). *sigh*
