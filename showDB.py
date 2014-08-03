@@ -4,10 +4,9 @@ try:
 except ImportError:
 	import Tkinter as tk
 	from tkFileDialog import askopenfilename
-	# dict.items = dict.iteritems
+	FileNotFoundError = IOError
 import sqlite3
 import WillsLib
-# In 2.4, there is iteritems(), in 3 there is just items(). *sigh*
 def switchColumns(base):
 	with open('showDB.config', 'r') as f:
 		l = list(f)
@@ -199,7 +198,7 @@ def closeCols(picked_columns, column_picker, db, table_name, write):
 	DB = DBList(root, db, table_name, cols)
 	DB.pack()
 	root.mainloop()
-def getCols(table_name, cursor, root):
+def getCols(table_name, cursor, root, db):
 	picked_columns = {}
 	cursor.execute("pragma table_info(%s)" % table_name)
 	tk.Label(root, text="Pick the columns you want to show").pack()
@@ -227,7 +226,7 @@ def showDB(db_location, table_name):
 	except FileNotFoundError:
 		l = []
 	if not l:
-		getCols(table_name, c, column_picker)
+		getCols(table_name, c, column_picker, db)
 	else:
 		for i, j in enumerate(l):
 			if j.find(table_name) != -1:
