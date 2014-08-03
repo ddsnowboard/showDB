@@ -241,8 +241,10 @@ if __name__ == "__main__":
 	location = ''
 	start = tk.Tk()
 	tk.Label(text='What is the name of your table?').pack()
-	box = tk.Entry(start)
+	box = tk.Entry(start, exportselection=0, state=tk.DISABLED)
 	box.pack()
-	tk.Button(start, text='OK', command=lambda: showDB(location, box.get())).pack()
-	location = askopenfilename(defaultextension='.db', title="Choose your database", parent=start, filetypes=[('Database Files', '.db'), ('All files', '*')])
+	button = tk.Button(start, text='OK', command=lambda: showDB(location, box.get()))
+	button.pack()
+	location = askopenfilename(defaultextension='.db', title="Choose your database", filetypes=[('Database Files', '.db'), ('All files', '*')])
+	box.config(state=tk.NORMAL)
 	start.mainloop()
