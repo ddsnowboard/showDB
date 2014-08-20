@@ -1,36 +1,64 @@
+# This is here to have python 2 compatibility. Unfortunately, it doesn't work. 
+# It's still here. It's not that there's an error with python 2, it just doesn't 
+# do anything. Anyway, this looks fancy, but it's just imports and some function reassignments. 
 try:
 	import tkinter as tk
 	from tkinter.filedialog import askopenfilename
+	from tkinter import messagebox
 except ImportError:
 	import Tkinter as tk
+	import tkMessageBox
 	from tkFileDialog import askopenfilename
 	FileNotFoundError = IOError
 import sqlite3
+# This isn't a regular python library, it's my own. It's for interfacing with sqlite3 tables more directly. 
 import WillsLib
+
+# This is the function called when I want to switch columns from what is in the 
+# config file. 
 def switchColumns(base):
 	with open('showDB.config', 'r') as f:
 		l = list(f)
+		# Look through the config file, and whenever you find the table we're working with, remove it and it's 
+		# list of columns (that's the two pop()'s in a row. 
 		for i, j in enumerate(l):
 			if j == sqlite3.table_name:
 				l.pop(i)
 				l.pop(i)
 				break
+	# Then rewrite the file. 
 	with open("showDB.config", 'w') as f:
 		for i in l:
 			f.write(i)
 		base.destroy()
+		# This function reads the file I just rewrote, so that's all I have to do. 
 		showDB(sqlite3.location, sqlite3.table_name)
+		
+# This is the window I bring up when you click on the add button, to add to a table. 
 class addWindow(tk.Tk):
 	def __init__(self, base_list):
 		tk.Tk.__init__(self)
+		# This is a DBList object, the list this is adding to.
 		self.base_list = base_list
+		# These are for the layout. Each column has a frame, in which is a 
+		# label and a text box to put the new data. 
 		self.frames = []
 		self.boxes = []
 		self.labels = []
+		
 		c = self.base_list.connection.cursor()
+		# This gets all the columns in the list so it can put them on the screen 
+		# as labels. 
 		c.execute('pragma table_info(%s)' % sqlite3.table_name)
-		for i in sorted([i[1] for i in c.fetchall()]):
+		# The columns are always in alphabetical order. I could change this, but I see no reason to. 
+		names = sorted([i[1] for i in c.fetchall()])
+		# I set this up so that any index will correspond to the same frame, 
+		# label, and text box, so it's easy to iterate through them.
+		for i in names:
+			# Add a new frame. 
 			self.frames.append(tk.Frame(self))
+			# Add a new label, with its parent the frame we just added, and 
+			# the text as the name from the pragma.
 			self.labels.append(tk.Label(self.frames[-1], text=str(i)+': '))
 			self.labels[-1].pack(side='left')
 			self.boxes.append(tk.Entry(self.frames[-1]))
@@ -38,8 +66,17 @@ class addWindow(tk.Tk):
 			self.frames[-1].pack()
 		tk.Button(self, text='OK', command=self.add).pack()
 	def add(self):
+		# This is the dictionary we're going to pass to the table itself, to be added. 
 		d = {}
 		for i in range(len(self.frames)):
+			# The bit in brackets is just a way to get the text from the label, 
+			# as that's going to be the key in the dictionary. Config() returns a
+			# dictionary of all the settings a certain thing has, and so I get text,
+			# which, along with the actual text, gives a bunch of other stuff, that's 
+			# what the "[4]" is for. And it replaces the colon, because that's not 
+			# part of the name. I should probably change it to replace a regex, so 
+			# you could have a colon as part of the column name... I'll worry about
+			# that later. Then we set it equal to the text from the text box. 
 			d[self.labels[i].config()['text'][4].replace(': ', '')] = self.boxes[i].get()
 		WillsLib.DBinsert(self.base_list.connection, sqlite3.table_name, d)
 		self.base_list.populate()
@@ -56,45 +93,59 @@ class deleteButton(tk.Button):
 		self.root = root
 		self.base_list = self.root.root
 	def delete(self):
-		# Add a dialog box asking if you really want to delete?
 		if self.base_list.getSelected():
-			WillsLib.DBdelete(self.base_list.connection, sqlite3.table_name, self.base_list.getSelected())
-			self.base_list.populate()
+			if tk.messagebox.askyesno("Delete", "Are you sure you want to delete?"):
+				WillsLib.DBdelete(self.base_list.connection, sqlite3.table_name, self.base_list.getSelected())
+				self.base_list.populate()
 class editButton(tk.Button):
 	def __init__(self, root):
 		tk.Button.__init__(self, root, text='Edit Selected', command=self.edit, state='disabled')
 		self.root = root
 		self.base_list = self.root.root
 	def edit(self):
+		# Only edit if there's something selected.
 		if self.base_list.getSelected():
+			# The index that is selected. It goes to the leftmost column, 
+			# just for simplicity, and asks for its selection. 
 			index = self.base_list.columns[list(self.base_list.columns.keys())[0]].list.curselection()
 			window = tk.Tk()
+			# See addWindow.__init__() for info on this.
 			self.frames = []
 			self.labels = []
 			self.boxes = []
 			c = self.base_list.connection.cursor()
 			c.execute('pragma table_info(%s)' % sqlite3.table_name)
 			for i in sorted([i[1] for i in c.fetchall()]):
+				# This is just like addWindow except for the fact that it supplies the old values in the boxes. 
 				self.frames.append(tk.Frame(window))
 				self.labels.append(tk.Label(self.frames[-1], text=i+': '))
 				self.labels[-1].pack(side='left')
 				self.boxes.append(tk.Entry(self.frames[-1]))
+				# This gets the correct text straight from the actual table, 
+				# that's why it's so long. It selects from the list where 
+				# the last column is equal to its value at the specific index. 
 				self.boxes[-1].insert('end', WillsLib.DBselect(self.base_list.connection, sqlite3.table_name, i, {list(self.base_list.columns.keys())[-1]:self.base_list.columns[list(self.base_list.columns.keys())[-1]].list.get(index)})[0])
 				self.boxes[-1].pack(side='left')
 				self.frames[-1].pack()
+			# This is just a frame for the buttons. 
 			choices = tk.Frame(window)
 			ok = tk.Button(choices, text='OK', command=lambda: self.finish(index, window))
 			cancel = tk.Button(choices, text='Cancel', command=window.destroy)
 			ok.pack(side='left')
 			cancel.pack(side='left')
 			choices.pack()
+	# This is just the end part of edit. 
 	def finish(self, index, window):
+		# This is the dictionary that's going to be added to the table. 
 		set = {}
 		for i, j in enumerate(self.labels):
+			# See the long comment in addWindow.add() for explanation of this. 
 			set[j.config()['text'][4].replace(': ', '')] = self.boxes[i].get()
+		# See editButton.edit() for an explanation of the last argument in this line. 
 		WillsLib.DBupdate(self.base_list.connection, sqlite3.table_name, set, {list(self.base_list.columns.keys())[-1]:self.base_list.columns[list(self.base_list.columns.keys())[-1]].list.get(index)})
 		self.base_list.populate()
 		window.destroy()
+# This is the top row of buttons in the main window. 
 class buttonBox(tk.Frame):
 	def __init__(self, root, connection):
 		tk.Frame.__init__(self, root)
@@ -105,51 +156,69 @@ class buttonBox(tk.Frame):
 		self.add.pack(side='left')
 		self.delete.pack(side='left')
 		self.edit.pack(side='left')
+	# This un-greys out some of the buttons when you select something. 
 	def activate(self):
 		for i in [self.edit, self.delete]:
-			i.config(state="normal")		
+			i.config(state="normal")
+# This is an individual column object, from which the DBList object is made. 
 class DBColumn(tk.Frame):
 	def __init__(self, root, name):
 		tk.Frame.__init__(self, root)
+		# Name is the name of the column.
 		self.name = name
 		self.root = root
+		# This is the actual name label above the column.
 		tk.Label(self, text=name).pack()
+		# This is the actual list. "exportselection = False" prevents it from 
+		# losing its selection when you click on another column, and yscrollcommand
+		# is for scrolling. 
 		self.list = tk.Listbox(self, exportselection = False, yscrollcommand=self.scroll)
+		# When you let go, this line selects the correct index across the list. 
 		self.list.bind('<ButtonRelease-1>', self.select)
 		self.list.pack()
+		# Exposing some list methods. 
 		self.config = self.list.config
 		self.insert = self.list.insert
 	def select(self, event):
+		# The index selected. Curselection() gives a list, even though you can't
+		# select more than one thing, so if you see index[0], that's why. 
 		selection = self.list.curselection()
 		if selection:
-			# This line will activate the buttons when something is clicked, but it's not done yet. 
+			# Un-grey out some buttons.
 			self.root.button_box.activate()
+			# For every column except me, highlight what I have highlighted. 
 			for i, j in self.root.columns.items():
 				if not i == self.name:
 					j.highlight(selection[0])
 	def highlight(self, selection):
 		self.list.selection_clear(0, self.list.size()-1)
 		self.list.selection_set(selection)
+	# This is a method that makes scrolling with the scrollbar or arrow keys work. 
 	def scroll(self, *args):
 		for i in self.root.columns.values():
 			if not i == self:
 				i.list.yview_moveto(args[0])
 		self.root.scrollbar.set(*args)
-	
+# This is the actual list object. 
 class DBList(tk.Frame):
 	def __init__(self, root, connection, table_name, cols):
 		tk.Frame.__init__(self, root)
+		# The connection to the sqlite3 table. 
 		self.connection = connection
+		# A dictionary of {name:column object}
 		self.columns = {}
-		self.table_name = table_name
+		# This is just a list of names.
 		self.column_names = cols
+		self.table_name = table_name
 		self.switch_button = tk.Button(root, text='Switch columns', command=lambda:switchColumns(root))
 		self.button_box = buttonBox(self, self.connection)
 		self.button_box.pack()
 		self.switch_button.pack()
 		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
+		# This loop actually makes the columns on the screen and puts them 
+		# in the columns variable.
 		for i, j in enumerate(sorted(self.column_names)):
-			self.columns[j] = (DBColumn(self, j))
+			self.columns[j] = DBColumn(self, j)
 			self.columns[j].pack(side='left')
 		self.scrollbar.pack(side='left', fill = 'y')
 		self.populate()
@@ -161,6 +230,9 @@ class DBList(tk.Frame):
 		for i in self.columns.values():
 			i.list.yview("scroll", event.delta,"units")
 		return "break"
+	# This adds a set of values, or a row, to the list. It doesn't take 
+	# care of the interface with the actual table though. Maybe I should 
+	# fix that. 
 	def add(self, cols):
 		# Cols is a dictionary.
 		if len(self.columns) != len(cols):
@@ -168,9 +240,10 @@ class DBList(tk.Frame):
 		else:
 			for i, j in cols.items():
 				self.columns[i].insert('end', j)
+	# Clear the table and put the changed table back in. 
+	# MAKE SURE THIS WORKS RIGHT. IT LOOKS LIKE IT COULD EASILY BE FICKLE. 
 	def populate(self):
 		rows = WillsLib.DBselect(self.connection, self.table_name, self.column_names, 'all')
-		row_dictionary = {}
 		for i in self.columns.values():
 			i.list.delete(0, 'end')
 		for i, j in enumerate(rows):
