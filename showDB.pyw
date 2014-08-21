@@ -313,7 +313,7 @@ def showDB(db_location, table_name):
 						p.set(0)
 				closeCols(cols, column_picker, db, table_name, False)
 				return
-		getCols(table_name, c, column_picker)
+		getCols(table_name, c, column_picker, db)
 if __name__ == "__main__":
 	location = ''
 	start = tk.Tk()
