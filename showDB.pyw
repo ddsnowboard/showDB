@@ -248,6 +248,8 @@ class DBList(tk.Frame):
 			# This will always work because column names comes from a sqlite3 "pragma" call, 
 			# and that will give the rows in the same order as a "select" call.
 			self.add({self.column_names[h]:k for h, k in enumerate(j)})
+	# This method gives you a dictionary of 
+	# everything selected, in the format {column:selection}.
 	def getSelected(self):
 		o = {}
 		for i, j in self.columns.items():
@@ -259,8 +261,10 @@ class DBList(tk.Frame):
 			return o
 		else:
 			return None
+# This is the finishing function for getCols(), which is fed from showDB(). ShowDB
+# doesn't really do that much itself, it mostly just sees what the column situation
+# is and gives it to getCols() if it needs to ask for columns, or this otherwise. 
 def closeCols(picked_columns, column_picker, db, table_name, write):
-	print({i:j.get() for i, j in picked_columns.items()})
 	if write:
 		with open('showDB.config', 'a') as f:
 			f.write("%s\n%s" % (table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
@@ -279,14 +283,12 @@ def getCols(table_name, cursor, root, db):
 	checkboxes = []
 	for i in [j[1] for j in cursor.fetchall()]:
 		picked_columns[i] = tk.IntVar(root)
-		checkboxes.append(tk.Checkbutton(root, text=str(i), variable=picked_columns[i], command=lambda: printvars(picked_columns)))
+		checkboxes.append(tk.Checkbutton(root, text=str(i), variable=picked_columns[i]))
 	for i in checkboxes:
 		i.pack()
 	ok_button = tk.Button(root, text="Done", command=lambda: closeCols(picked_columns, root, db, table_name, True))
 	ok_button.pack()
 	root.mainloop()
-def printvars(d):
-	print({i:j.get() for i, j in d.items()})
 def showDB(db_location, table_name):
 	db = sqlite3.connect(db_location)
 	sqlite3.location = db_location
@@ -310,7 +312,7 @@ def showDB(db_location, table_name):
 				cols = {p[1]:tk.IntVar() for p in c.fetchall()}
 				for m, p in cols.items():
 					try:
-						l[i+1].split(',').index(m) 
+						l[i+1].split(',').index(m)
 						p.set(1)
 					except ValueError:
 						p.set(0)
