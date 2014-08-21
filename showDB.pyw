@@ -263,7 +263,9 @@ class DBList(tk.Frame):
 			return None
 # This is the finishing function for getCols(), which is fed from showDB(). ShowDB
 # doesn't really do that much itself, it mostly just sees what the column situation
-# is and gives it to getCols() if it needs to ask for columns, or this otherwise. 
+# is and gives it to getCols() if it needs to ask for columns, or to this otherwise. 
+# Column_picker is the column picker window, db is the connection, and write is a boolean
+# telling whether or not to write the picked columns to the config file. 
 def closeCols(picked_columns, column_picker, db, table_name, write):
 	if write:
 		with open('showDB.config', 'a') as f:
@@ -276,6 +278,8 @@ def closeCols(picked_columns, column_picker, db, table_name, write):
 	DB = DBList(root, db, table_name, cols)
 	DB.pack()
 	root.mainloop()
+# This function just puts up the window that asks for the columns, and 
+# then gives that information to closeCols() to finish up. 
 def getCols(table_name, cursor, root, db):
 	picked_columns = {}
 	cursor.execute("pragma table_info(%s)" % table_name)
@@ -289,7 +293,11 @@ def getCols(table_name, cursor, root, db):
 	ok_button = tk.Button(root, text="Done", command=lambda: closeCols(picked_columns, root, db, table_name, True))
 	ok_button.pack()
 	root.mainloop()
-def showDB(db_location, table_name):
+# This is the method you want to call if you're using this as a 
+# library. This will take care of everything from start to finish. 
+# You can supply the columns programmitcally with the "columns" variable, 
+# it's a list, or you can leave it blank and the user can do it. 
+def showDB(db_location, table_name, columns = None):
 	db = sqlite3.connect(db_location)
 	sqlite3.location = db_location
 	sqlite3.table_name = table_name
@@ -297,21 +305,43 @@ def showDB(db_location, table_name):
 	picked_columns = {}
 	checkboxes = []
 	c = db.cursor()
-	try:
-		f = open("showDB.config", 'r')
-		l = list(f)
-		f.close()
-	except FileNotFoundError:
-		l = []
+	if columns:
+		c.execute("pragma table_info(%s)" % sqlite3.table_name)
+		d = {p[1]:tk.IntVar() for p in c.fetchall()}
+		for i, j in d.items():
+			if i in columns:
+				j.set(1)
+		closeCols(d, column_picker, db, sqlite3.table_name, False)
+		return
+	else:
+		# This is the file reading logic. If there's a file, it turns it into a 
+		# list and parses it for the table and the columns that go with it, or else
+		# it asks the user. 
+		try:
+			f = open("showDB.config", 'r')
+			l = list(f)
+			f.close()
+		except FileNotFoundError:
+			l = []
 	if not l:
+		# If there's nothing in the config file, ask the user.
 		getCols(table_name, c, column_picker, db)
 	else:
+		# If there is something in the config file, go through every line... 
 		for i, j in enumerate(l):
+			# If it's the table name...
 			if j.find(table_name) != -1:
+				# Make a dict of all the columns in the table, with IntVar()'s 
+				# as their values. 
 				c.execute("pragma table_info(%s)" % sqlite3.table_name)
 				cols = {p[1]:tk.IntVar() for p in c.fetchall()}
 				for m, p in cols.items():
 					try:
+						# Index() throws an error if it can't find anything, so 
+						# if it goes through right, than that column must be in 
+						# the line, so it is set to 1, which means it's there. 
+						# If it throws an error, that means it's not there, so it
+						# needs to be 0. 
 						l[i+1].split(',').index(m)
 						p.set(1)
 					except ValueError:
@@ -319,6 +349,11 @@ def showDB(db_location, table_name):
 				closeCols(cols, column_picker, db, table_name, False)
 				return
 		getCols(table_name, c, column_picker, db)
+# This makes it so that, if you just run this straight, not as a library, 
+# it'll ask you where the database is and show it to you. There's a bug, though, 
+# when you start it, there's a file dialog, and when you close that, you're supposed
+# to type the name of the table itself, but you can't actually use that box until 
+# you remove focus and then bring it back. It's strange. But other than that, it works fine. 
 if __name__ == "__main__":
 	location = ''
 	start = tk.Tk()
