@@ -50,8 +50,7 @@ class addWindow(tk.Tk):
 		# This gets all the columns in the list so it can put them on the screen 
 		# as labels. 
 		c.execute('pragma table_info(%s)' % sqlite3.table_name)
-		# The columns are always in alphabetical order. I could change this, but I see no reason to. 
-		names = sorted([i[1] for i in c.fetchall()])
+		names = [i[1] for i in c.fetchall()]
 		# I set this up so that any index will correspond to the same frame, 
 		# label, and text box, so it's easy to iterate through them.
 		for i in names:
@@ -115,7 +114,7 @@ class editButton(tk.Button):
 			self.boxes = []
 			c = self.base_list.connection.cursor()
 			c.execute('pragma table_info(%s)' % sqlite3.table_name)
-			for i in sorted([i[1] for i in c.fetchall()]):
+			for i in [i[1] for i in c.fetchall()]:
 				# This is just like addWindow except for the fact that it supplies the old values in the boxes. 
 				self.frames.append(tk.Frame(window))
 				self.labels.append(tk.Label(self.frames[-1], text=i+': '))
@@ -217,7 +216,7 @@ class DBList(tk.Frame):
 		self.scrollbar = tk.Scrollbar(self, orient = 'vertical', command = self.scroll)
 		# This loop actually makes the columns on the screen and puts them 
 		# in the columns variable.
-		for i, j in enumerate(sorted(self.column_names)):
+		for j in self.column_names:
 			self.columns[j] = DBColumn(self, j)
 			self.columns[j].pack(side='left')
 		self.scrollbar.pack(side='left', fill = 'y')
@@ -241,12 +240,13 @@ class DBList(tk.Frame):
 			for i, j in cols.items():
 				self.columns[i].insert('end', j)
 	# Clear the table and put the changed table back in. 
-	# MAKE SURE THIS WORKS RIGHT. IT LOOKS LIKE IT COULD EASILY BE FICKLE. 
 	def populate(self):
 		rows = WillsLib.DBselect(self.connection, self.table_name, self.column_names, 'all')
 		for i in self.columns.values():
 			i.list.delete(0, 'end')
 		for i, j in enumerate(rows):
+			# This will always work because column names comes from a sqlite3 "pragma" call, 
+			# and that will give the rows in the same order as a "select" call.
 			self.add({self.column_names[h]:k for h, k in enumerate(j)})
 	def getSelected(self):
 		o = {}
@@ -260,9 +260,10 @@ class DBList(tk.Frame):
 		else:
 			return None
 def closeCols(picked_columns, column_picker, db, table_name, write):
+	print({i:j.get() for i, j in picked_columns.items()})
 	if write:
 		with open('showDB.config', 'a') as f:
-			f.write("%s\n%s" % (table_name, ','.join(sorted([i for i, j in picked_columns.items() if j.get() == 1]))))
+			f.write("%s\n%s" % (table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
 	cols = [i for i in picked_columns.keys() if picked_columns[i].get() == 1]
 	column_picker.destroy()
 	if cols == []:
@@ -276,9 +277,9 @@ def getCols(table_name, cursor, root, db):
 	cursor.execute("pragma table_info(%s)" % table_name)
 	tk.Label(root, text="Pick the columns you want to show").pack()
 	checkboxes = []
-	for i in cursor.fetchall():
-		picked_columns[i[1]] = tk.IntVar()
-		checkboxes.append(tk.Checkbutton(root, text=str(i[1]), variable=picked_columns[i[1]]))
+	for i in [j[1] for j in cursor.fetchall()]:
+		picked_columns[i] = tk.IntVar()
+		checkboxes.append(tk.Checkbutton(root, text=str(i), variable=picked_columns[i]))
 	for i in checkboxes:
 		i.pack()
 	ok_button = tk.Button(root, text="Done", command=lambda: closeCols(picked_columns, root, db, table_name, True))
