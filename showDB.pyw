@@ -278,13 +278,15 @@ def getCols(table_name, cursor, root, db):
 	tk.Label(root, text="Pick the columns you want to show").pack()
 	checkboxes = []
 	for i in [j[1] for j in cursor.fetchall()]:
-		picked_columns[i] = tk.IntVar()
-		checkboxes.append(tk.Checkbutton(root, text=str(i), variable=picked_columns[i]))
+		picked_columns[i] = tk.IntVar(root)
+		checkboxes.append(tk.Checkbutton(root, text=str(i), variable=picked_columns[i], command=lambda: printvars(picked_columns)))
 	for i in checkboxes:
 		i.pack()
 	ok_button = tk.Button(root, text="Done", command=lambda: closeCols(picked_columns, root, db, table_name, True))
 	ok_button.pack()
 	root.mainloop()
+def printvars(d):
+	print({i:j.get() for i, j in d.items()})
 def showDB(db_location, table_name):
 	db = sqlite3.connect(db_location)
 	sqlite3.location = db_location
