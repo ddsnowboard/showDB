@@ -261,12 +261,29 @@ class DBList(tk.Frame):
 			return o
 		else:
 			return None
+class TableCreator(tk.Tk):
+	def __init__(self, connection, table_name):
+		tk.Tk.__init__(self)
+		self.connection = connection
+		self.table_name = table_name
+		self.running = True
+		tk.Label(self, text="Table name: {}".format(table_name)).pack()
+		tk.Label(self, text="Type in the columns that will be in your \ntable, separated by commas.").pack()
+		self.box = tk.Entry(self)
+		self.box.pack()
+		tk.Button(self, text = "Done", command = self.create).pack()
+	def create(self):
+		self.new_cols = self.box.get().replace(' ','').split(',')
+		WillsLib.DBcreate(self.connection, self.table_name, self.new_cols)
+		self.running = False
+		self.destroy()
+		
 # This is the finishing function for getCols(), which is fed from showDB(). ShowDB
 # doesn't really do that much itself, it mostly just sees what the column situation
 # is and gives it to getCols() if it needs to ask for columns, or to this otherwise. 
 # Column_picker is the column picker window, db is the connection, and write is a boolean
 # telling whether or not to write the picked columns to the config file. 
-def closeCols(picked_columns, column_picker, db, table_name, write):
+def closeCols(picked_columns, column_picker, db, table_name, write):		
 	if write:
 		with open('showDB.config', 'a') as f:
 			f.write("%s\n%s" % (table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
@@ -301,9 +318,11 @@ def showDB(db_location, table_name, columns = None):
 	db = sqlite3.connect(db_location)
 	sqlite3.location = db_location
 	sqlite3.table_name = table_name
-	# c = db.cursor()
-	# c.execute("pragma table_info({})".format(table_name))
-	# if(c.fetchall() == []):
+	c = db.cursor()
+	c.execute("pragma table_info({})".format(table_name))
+	if(c.fetchall() == []):
+		table_creator = TableCreator(db, table_name)
+		table_creator.wait_window(table_creator)
 	column_picker = tk.Tk()
 	picked_columns = {}
 	checkboxes = []
