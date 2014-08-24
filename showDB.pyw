@@ -301,6 +301,9 @@ def showDB(db_location, table_name, columns = None):
 	db = sqlite3.connect(db_location)
 	sqlite3.location = db_location
 	sqlite3.table_name = table_name
+	# c = db.cursor()
+	# c.execute("pragma table_info({})".format(table_name))
+	# if(c.fetchall() == []):
 	column_picker = tk.Tk()
 	picked_columns = {}
 	checkboxes = []
