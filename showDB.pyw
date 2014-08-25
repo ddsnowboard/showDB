@@ -281,7 +281,6 @@ class FirstBox(tk.Frame):
 			self.button.pack(side='left')
 		def get(self):
 			return self.box.get()
-			
 # This runs if there is no table under the given name. It asks for columns, 
 # and creates a table. 
 class TableCreator(tk.Tk):
@@ -291,7 +290,7 @@ class TableCreator(tk.Tk):
 		self.table_name = table_name
 		tk.Label(self, text="Table name: {}".format(table_name)).pack()
 		# WHATEVER YOU DECIDE ON, MAKE SURE THIS TEXT REFLECTS IT!!!!
-		tk.Label(self, text="Type in the columns that will be in your \ntable, separated by commas.").pack()
+		tk.Label(self, text="Type in the columns that will be in your \ntable, one in each box.\nPress the button for more boxes. ").pack()
 		self.boxes = []
 		self.boxes.append(FirstBox(self))
 		for i in self.boxes:
@@ -300,6 +299,7 @@ class TableCreator(tk.Tk):
 		self.done.pack()	
 	def create(self):
 		self.new_cols = [i.get().replace(' ','') for i in self.boxes]
+		print(self.new_cols)
 		WillsLib.DBcreate(self.connection, self.table_name, self.new_cols)
 		self.destroy()
 	def addBox(self):
