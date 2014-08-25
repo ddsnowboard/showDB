@@ -261,23 +261,55 @@ class DBList(tk.Frame):
 			return o
 		else:
 			return None
+class BoxFrame(tk.Frame):
+	def __init__(self, root):
+		tk.Frame.__init__(self, root, pady=5)
+		self.box = tk.Entry(self)
+		self.box.pack(side='left')
+		tk.Frame(self, width=22).pack(side='left')
+	def get(self):
+		return self.box.get()
+class FirstBox(tk.Frame):
+		def __init__(self, root):
+			tk.Frame.__init__(self, root)
+			self.root = root
+			self.box = tk.Entry(self)
+			img = tk.PhotoImage(master = self.root, file="icon.gif")
+			self.button = tk.Button(self, image=img, command=self.root.addBox, height=15, width=15)
+			self.picture = img
+			self.box.pack(side='left')
+			self.button.pack(side='left')
+		def get(self):
+			return self.box.get()
+			
+# This runs if there is no table under the given name. It asks for columns, 
+# and creates a table. 
 class TableCreator(tk.Tk):
 	def __init__(self, connection, table_name):
 		tk.Tk.__init__(self)
 		self.connection = connection
 		self.table_name = table_name
-		self.running = True
 		tk.Label(self, text="Table name: {}".format(table_name)).pack()
+		# WHATEVER YOU DECIDE ON, MAKE SURE THIS TEXT REFLECTS IT!!!!
 		tk.Label(self, text="Type in the columns that will be in your \ntable, separated by commas.").pack()
-		self.box = tk.Entry(self)
-		self.box.pack()
-		tk.Button(self, text = "Done", command = self.create).pack()
+		self.boxes = []
+		self.boxes.append(FirstBox(self))
+		for i in self.boxes:
+			i.pack()
+		self.done = tk.Button(self, text = "Done", command = self.create)
+		self.done.pack()	
 	def create(self):
-		self.new_cols = self.box.get().replace(' ','').split(',')
+		self.new_cols = [i.get().replace(' ','') for i in self.boxes]
 		WillsLib.DBcreate(self.connection, self.table_name, self.new_cols)
-		self.running = False
 		self.destroy()
-		
+	def addBox(self):
+		for i in self.boxes:
+			i.pack_forget()
+		self.done.pack_forget()
+		self.boxes.append(BoxFrame(self))
+		for i in self.boxes:
+			i.pack()		
+		self.done.pack()
 # This is the finishing function for getCols(), which is fed from showDB(). ShowDB
 # doesn't really do that much itself, it mostly just sees what the column situation
 # is and gives it to getCols() if it needs to ask for columns, or to this otherwise. 
