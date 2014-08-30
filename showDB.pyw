@@ -403,19 +403,35 @@ def showDB(db_location, table_name, columns = None):
 				closeCols(cols, column_picker, db, table_name, False)
 				return
 		getCols(table_name, c, column_picker, db)
+class fileCreate(tk.Tk):
+	def __init__(self, root):
+		tk.Tk.__init__(self)
+		root.destroy()
+		tk.Label(self, text="Name of file, including extension (.db):").pack(side='left')
+		self.box = tk.Entry(dialog)
+		self.box.pack(side='left')
+		tk.Button(dialog, command=self.finish).pack(side='top')
+	def finish(self):
+		sqlite3.location = self.box.get()
+		root.destroy()
+		self.destroy()
 # This makes it so that, if you just run this straight, not as a library, 
 # it'll ask you where the database is and show it to you. There's a bug, though, 
 # when you start it, there's a file dialog, and when you close that, you're supposed
 # to type the name of the table itself, but you can't actually use that box until 
 # you remove focus and then bring it back. It's strange. But other than that, it works fine. 
 if __name__ == "__main__":
-	location = ''
+	sqlite3.location = ''
 	start = tk.Tk()
-	tk.Label(text='What is the name of your table?').pack()
-	box = tk.Entry(start, exportselection=0, state=tk.DISABLED)
+	new_file_frame = tk.Frame(start)
+	tk.Button(new_file_frame, text='Create a new .db file', command=lambda: fileCreate(new_file_frame)).pack(side='left')
+	tk.Button(new_file_frame, text='Find an existing .db file').pack(side='left')
+	start.wait_window(start)
+	start = tk.Tk()
+	tk.Label(start, text='What is the name of your table?').pack()
+	box = tk.Entry(start)
 	box.pack()
 	button = tk.Button(start, text='OK', command=lambda: showDB(location, box.get()))
 	button.pack()
-	location = askopenfilename(defaultextension='.db', title="Choose your database", filetypes=[('Database Files', '.db'), ('All files', '*')])
-	box.config(state=tk.NORMAL)
-	start.mainloop()
+# 	I don't know if I need this anymore. I'll check. 
+# 	start.mainloop()
