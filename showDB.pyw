@@ -299,7 +299,6 @@ class TableCreator(tk.Tk):
 		self.done.pack()	
 	def create(self):
 		self.new_cols = [i.get().replace(' ','') for i in self.boxes]
-		print(self.new_cols)
 		WillsLib.DBcreate(self.connection, self.table_name, self.new_cols)
 		self.destroy()
 	def addBox(self):
@@ -406,32 +405,52 @@ def showDB(db_location, table_name, columns = None):
 class fileCreate(tk.Tk):
 	def __init__(self, root):
 		tk.Tk.__init__(self)
-		root.destroy()
-		tk.Label(self, text="Name of file, including extension (.db):").pack(side='left')
-		self.box = tk.Entry(dialog)
+		frame = tk.Frame(self)
+		self.root = root
+		tk.Label(frame, text="Name of file, including extension (.db):").pack(side='left')
+		self.box = tk.Entry(frame)
 		self.box.pack(side='left')
-		tk.Button(dialog, command=self.finish).pack(side='top')
+		frame.pack()
+		tk.Button(self, text="OK", command=self.finish).pack(side='top')
 	def finish(self):
 		sqlite3.location = self.box.get()
+		self.root.destroy()
+		self.destroy()
+class fileFind(tk.Tk):
+	def __init__(self, root):
+		print("__init__() called")
+		tk.Tk.__init__(self)
+		print('Tk inited')
+		sqlite3.location = askopenfilename(title="Choose your database", parent=self, defaultextension='.db', filetypes=[('Database Files', '.db'), ('All files', '*')])
+		print('location set')
+		self.done()
+	def done(self):
+		print('done called')
 		root.destroy()
 		self.destroy()
+def askForFile():
+# 	location = askopenfilename(title="Choose your database", defaultextension='.db', filetypes=[('Database Files', '.db'), ('All files', '*')])
+	pass
 # This makes it so that, if you just run this straight, not as a library, 
 # it'll ask you where the database is and show it to you. There's a bug, though, 
 # when you start it, there's a file dialog, and when you close that, you're supposed
 # to type the name of the table itself, but you can't actually use that box until 
 # you remove focus and then bring it back. It's strange. But other than that, it works fine. 
 if __name__ == "__main__":
-	sqlite3.location = ''
+	sqlite3.location = 'test.db'
 	start = tk.Tk()
-	new_file_frame = tk.Frame(start)
-	tk.Button(new_file_frame, text='Create a new .db file', command=lambda: fileCreate(new_file_frame)).pack(side='left')
-	tk.Button(new_file_frame, text='Find an existing .db file').pack(side='left')
+	new_file_frame = tk.Frame(start, bd=30)
+	tk.Label(start, text="showDB").pack()
+	tk.Button(new_file_frame, text='Create a new .db file', command=lambda: fileCreate(start)).pack(side='left')
+	tk.Button(new_file_frame, text='Find an existing .db file', command=lambda: askForFile()).pack(side='left')
+	new_file_frame.pack()
 	start.wait_window(start)
-	start = tk.Tk()
-	tk.Label(start, text='What is the name of your table?').pack()
-	box = tk.Entry(start)
+	name = tk.Tk()
+	tk.Label(name, text='What is the name of your table?').pack()
+	box = tk.Entry(name)
 	box.pack()
-	button = tk.Button(start, text='OK', command=lambda: showDB(location, box.get()))
+	button = tk.Button(name, text='OK', command=lambda: name.destroy())
+	button.bind("<Button-1>", lambda e: showDB(sqlite3.location, box.get()))
 	button.pack()
 # 	I don't know if I need this anymore. I'll check. 
-# 	start.mainloop()
+# 	name.mainloop()
