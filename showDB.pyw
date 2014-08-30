@@ -411,38 +411,32 @@ class fileCreate(tk.Tk):
 		self.box = tk.Entry(frame)
 		self.box.pack(side='left')
 		frame.pack()
-		tk.Button(self, text="OK", command=self.finish).pack(side='top')
-	def finish(self):
+		tk.Button(self, text="OK", command=self.done).pack(side='top')
+	def done(self):
 		sqlite3.location = self.box.get()
 		self.root.destroy()
 		self.destroy()
 class fileFind(tk.Tk):
 	def __init__(self, root):
-		print("__init__() called")
 		tk.Tk.__init__(self)
-		print('Tk inited')
+		self.root = root
 		sqlite3.location = askopenfilename(title="Choose your database", parent=self, defaultextension='.db', filetypes=[('Database Files', '.db'), ('All files', '*')])
-		print('location set')
 		self.done()
 	def done(self):
-		print('done called')
-		root.destroy()
+		self.root.destroy()
 		self.destroy()
-def askForFile():
-# 	location = askopenfilename(title="Choose your database", defaultextension='.db', filetypes=[('Database Files', '.db'), ('All files', '*')])
-	pass
 # This makes it so that, if you just run this straight, not as a library, 
 # it'll ask you where the database is and show it to you. There's a bug, though, 
 # when you start it, there's a file dialog, and when you close that, you're supposed
 # to type the name of the table itself, but you can't actually use that box until 
 # you remove focus and then bring it back. It's strange. But other than that, it works fine. 
 if __name__ == "__main__":
-	sqlite3.location = 'test.db'
+	sqlite3.location = ''
 	start = tk.Tk()
 	new_file_frame = tk.Frame(start, bd=30)
 	tk.Label(start, text="showDB").pack()
 	tk.Button(new_file_frame, text='Create a new .db file', command=lambda: fileCreate(start)).pack(side='left')
-	tk.Button(new_file_frame, text='Find an existing .db file', command=lambda: askForFile()).pack(side='left')
+	tk.Button(new_file_frame, text='Find an existing .db file', command=lambda: fileFind(start)).pack(side='left')
 	new_file_frame.pack()
 	start.wait_window(start)
 	name = tk.Tk()
@@ -453,4 +447,4 @@ if __name__ == "__main__":
 	button.bind("<Button-1>", lambda e: showDB(sqlite3.location, box.get()))
 	button.pack()
 # 	I don't know if I need this anymore. I'll check. 
-# 	name.mainloop()
+	name.mainloop()
