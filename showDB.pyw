@@ -289,7 +289,6 @@ class TableCreator(tk.Tk):
 		self.connection = connection
 		self.table_name = table_name
 		tk.Label(self, text="Table name: {}".format(table_name)).pack()
-		# WHATEVER YOU DECIDE ON, MAKE SURE THIS TEXT REFLECTS IT!!!!
 		tk.Label(self, text="Type in the columns that will be in your \ntable, one in each box.\nPress the button for more boxes. ").pack()
 		self.boxes = []
 		self.boxes.append(FirstBox(self))
@@ -317,7 +316,7 @@ class TableCreator(tk.Tk):
 def closeCols(picked_columns, column_picker, db, table_name, write):		
 	if write:
 		with open('showDB.config', 'a') as f:
-			f.write("%s\n%s" % (table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
+			f.write("%s\n%s" % (sqlite3.location+'/'+table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
 	cols = [i for i in picked_columns.keys() if picked_columns[i].get() == 1]
 	column_picker.destroy()
 	if cols == []:
@@ -383,7 +382,7 @@ def showDB(db_location, table_name, columns = None):
 		# If there is something in the config file, go through every line... 
 		for i, j in enumerate(l):
 			# If it's the table name...
-			if j.find(table_name) != -1:
+			if j.find(sqlite3.location+'/'+table_name) != -1:
 				# Make a dict of all the columns in the table, with IntVar()'s 
 				# as their values. 
 				c.execute("pragma table_info(%s)" % sqlite3.table_name)
@@ -405,8 +404,8 @@ def showDB(db_location, table_name, columns = None):
 class fileCreate(tk.Tk):
 	def __init__(self, root):
 		tk.Tk.__init__(self)
-		frame = tk.Frame(self)
 		self.root = root
+		frame = tk.Frame(self)
 		tk.Label(frame, text="Name of file, including extension (.db):").pack(side='left')
 		self.box = tk.Entry(frame)
 		self.box.pack(side='left')
@@ -446,5 +445,4 @@ if __name__ == "__main__":
 	button = tk.Button(name, text='OK', command=lambda: name.destroy())
 	button.bind("<Button-1>", lambda e: showDB(sqlite3.location, box.get()))
 	button.pack()
-# 	I don't know if I need this anymore. I'll check. 
 	name.mainloop()
