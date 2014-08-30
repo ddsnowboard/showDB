@@ -412,9 +412,13 @@ class fileCreate(tk.Tk):
 		frame.pack()
 		tk.Button(self, text="OK", command=self.done).pack(side='top')
 	def done(self):
+		print("Started function")
 		sqlite3.location = self.box.get()
+		print("Location gotten")
 		self.root.destroy()
-		self.destroy()
+		print("Root destroyed")
+# 		self.destroy()
+		print('self destroyed')
 class fileFind(tk.Tk):
 	def __init__(self, root):
 		tk.Tk.__init__(self)
