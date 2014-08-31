@@ -1,3 +1,5 @@
+# SEE LINE 75 FOR WHAT I'M WOKRING ON NOW. 
+
 # This is here to have python 2 compatibility. Unfortunately, it doesn't work. 
 # It's still here. It's not that there's an error with python 2, it just doesn't 
 # do anything. Anyway, this looks fancy, but it's just imports and some function reassignments. 
@@ -13,7 +15,15 @@ except ImportError:
 import sqlite3
 # This isn't a regular python library, it's my own. It's for interfacing with sqlite3 tables more directly. 
 import WillsLib
-
+def validate(s, complain):
+	print("String: %s" % s)
+	WORD_LIST = ['ABORT', 'ACTION', 'ADD', 'AFTER', 'ALL', 'ALTER', 'ANALYZE', 'AND', 'AS', 'ASC', 'ATTACH', 'AUTOINCREMENT', 'BEFORE', 'BEGIN', 'BETWEEN', 'BY', 'CASCADE', 'CASE', 'CAST', 'CHECK', 'COLLATE', 'COLUMN', 'COMMIT', 'CONFLICT', 'CONSTRAINT', 'CREATE', 'CROSS', 'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP', 'DATABASE', 'DEFAULT', 'DEFERRABLE', 'DEFERRED', 'DELETE', 'DESC', 'DETACH', 'DISTINCT', 'DROP', 'EACH', 'ELSE', 'END', 'ESCAPE', 'EXCEPT', 'EXCLUSIVE', 'EXISTS', 'EXPLAIN', 'FAIL', 'FOR', 'FOREIGN', 'FROM', 'FULL', 'GLOB', 'GROUP', 'HAVING', 'IF', 'IGNORE', 'IMMEDIATE', 'IN', 'INDEX', 'INDEXED', 'INITIALLY', 'INNER', 'INSERT', 'INSTEAD', 'INTERSECT', 'INTO', 'IS', 'ISNULL', 'JOIN', 'KEY', 'LEFT', 'LIKE', 'LIMIT', 'MATCH', 'NATURAL', 'NO', 'NOT', 'NOTNULL', 'NULL', 'OF', 'OFFSET', 'ON', 'OR', 'ORDER', 'OUTER', 'PLAN', 'PRAGMA', 'PRIMARY', 'QUERY', 'RAISE', 'RECURSIVE', 'REFERENCES', 'REGEXP', 'REINDEX', 'RELEASE', 'RENAME', 'REPLACE', 'RESTRICT', 'RIGHT', 'ROLLBACK', 'ROW', 'SAVEPOINT', 'SELECT', 'SET', 'TABLE', 'TEMP', 'TEMPORARY', 'THEN', 'TO', 'TRANSACTION', 'TRIGGER', 'UNION', 'UNIQUE', 'UPDATE', 'USING', 'VACUUM', 'VALUES', 'VIEW', 'VIRTUAL', 'WHEN', 'WHERE', 'WITH', 'WITHOUT']
+	for i in WORD_LIST:
+		if i.lower() == s.lower():
+			complain.config(text="Sorry, you can't use\nthat word in your input")
+			return True
+	complain.config(text='')
+	return True
 # This is the function called when I want to switch columns from what is in the 
 # config file. 
 def switchColumns(base):
@@ -51,6 +61,7 @@ class addWindow(tk.Tk):
 		# as labels. 
 		c.execute('pragma table_info(%s)' % sqlite3.table_name)
 		names = [i[1] for i in c.fetchall()]
+		complaint = tk.Label(self)
 		# I set this up so that any index will correspond to the same frame, 
 		# label, and text box, so it's easy to iterate through them.
 		for i in names:
@@ -61,8 +72,14 @@ class addWindow(tk.Tk):
 			self.labels.append(tk.Label(self.frames[-1], text=str(i)+': '))
 			self.labels[-1].pack(side='left')
 			self.boxes.append(tk.Entry(self.frames[-1]))
+			# THESE TWO LINES ARE THE ONES THAT YOU NEED TO HAVE TO GET THE VALIDATION TO GO
+			# HOW YOU WANT IT. COPY THESE ONTO EVERYWHERE THERE ARE BOXES, EXCEPT WHERE IT'S 
+			# OBVIOUSLY UNNECESSARY. 
+			vcommand = self.boxes[-1].register(lambda s: validate(s, complaint))
+			self.boxes[-1].config(validate='key', vcmd=(vcommand, "%P"))
 			self.boxes[-1].pack(side='left')
 			self.frames[-1].pack()
+		complaint.pack()
 		tk.Button(self, text='OK', command=self.add).pack()
 	def add(self):
 		# This is the dictionary we're going to pass to the table itself, to be added. 
@@ -238,7 +255,7 @@ class DBList(tk.Frame):
 			raise Exception("You didn't give the right amount of columns!")
 		else:
 			for i, j in cols.items():
-				self.columns[i].insert('end', j)
+				self.columns[i.replace("'",'')].insert('end', j)
 	# Clear the table and put the changed table back in. 
 	def populate(self):
 		rows = WillsLib.DBselect(self.connection, self.table_name, self.column_names, 'all')

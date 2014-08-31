@@ -17,7 +17,7 @@ def DBinsert(connection, table_name, vals):
 		connection.cursor().execute(s, tuple(vals))
 	elif type(vals) == type({}):
 		s = 'insert into %s(' % sanitize(table_name)
-		s += ','.join(vals.keys())
+		s += ','.join([sanitize(i) for i in vals.keys()])
 		s+=') VALUES (?'
 		for i in range(len(vals.values())-1):
 			s +=',?'
