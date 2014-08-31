@@ -316,7 +316,7 @@ class TableCreator(tk.Tk):
 def closeCols(picked_columns, column_picker, db, table_name, write):		
 	if write:
 		with open('showDB.config', 'a') as f:
-			f.write("%s\n%s" % (sqlite3.location+'/'+table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
+			f.write("%s\n%s\n" % (sqlite3.location+'/'+table_name, ','.join([i for i, j in picked_columns.items() if j.get() == 1])))
 	cols = [i for i in picked_columns.keys() if picked_columns[i].get() == 1]
 	column_picker.destroy()
 	if cols == []:
@@ -412,13 +412,9 @@ class fileCreate(tk.Tk):
 		frame.pack()
 		tk.Button(self, text="OK", command=self.done).pack(side='top')
 	def done(self):
-		print("Started function")
 		sqlite3.location = self.box.get()
-		print("Location gotten")
 		self.root.destroy()
-		print("Root destroyed")
 # 		self.destroy()
-		print('self destroyed')
 class fileFind(tk.Tk):
 	def __init__(self, root):
 		tk.Tk.__init__(self)
@@ -429,10 +425,7 @@ class fileFind(tk.Tk):
 		self.root.destroy()
 		self.destroy()
 # This makes it so that, if you just run this straight, not as a library, 
-# it'll ask you where the database is and show it to you. There's a bug, though, 
-# when you start it, there's a file dialog, and when you close that, you're supposed
-# to type the name of the table itself, but you can't actually use that box until 
-# you remove focus and then bring it back. It's strange. But other than that, it works fine. 
+# it'll ask you where the database is and show it to you. 	
 if __name__ == "__main__":
 	sqlite3.location = ''
 	start = tk.Tk()
@@ -446,6 +439,8 @@ if __name__ == "__main__":
 	tk.Label(name, text='What is the name of your table?').pack()
 	box = tk.Entry(name)
 	box.pack()
+# 	I found that things that you bind() to something execute first, so I made it like this
+# 	so that it does the function and then destroys itself. 
 	button = tk.Button(name, text='OK', command=lambda: name.destroy())
 	button.bind("<Button-1>", lambda e: showDB(sqlite3.location, box.get()))
 	button.pack()
