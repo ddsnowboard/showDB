@@ -1,4 +1,8 @@
-# SEE LINE 75 FOR WHAT I'M WOKRING ON NOW. 
+# Ok, now I'm going to make a special complaint object because there are a few things
+# that are really going to be annoying otherwise. I need it to take a bunch of inputs, 
+# and yell when any are bad, not just the last one to get at it, and I want a boolean function
+# that I can call whenever 'Done' is pressed to see whether there are valid inputs in all the 
+# boxes. So that's next.   
 
 # This is here to have python 2 compatibility. Unfortunately, it doesn't work. 
 # It's still here. It's not that there's an error with python 2, it just doesn't 
@@ -16,7 +20,6 @@ import sqlite3
 # This isn't a regular python library, it's my own. It's for interfacing with sqlite3 tables more directly. 
 import WillsLib
 def validate(s, complain):
-	print("String: %s" % s)
 	WORD_LIST = ['ABORT', 'ACTION', 'ADD', 'AFTER', 'ALL', 'ALTER', 'ANALYZE', 'AND', 'AS', 'ASC', 'ATTACH', 'AUTOINCREMENT', 'BEFORE', 'BEGIN', 'BETWEEN', 'BY', 'CASCADE', 'CASE', 'CAST', 'CHECK', 'COLLATE', 'COLUMN', 'COMMIT', 'CONFLICT', 'CONSTRAINT', 'CREATE', 'CROSS', 'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP', 'DATABASE', 'DEFAULT', 'DEFERRABLE', 'DEFERRED', 'DELETE', 'DESC', 'DETACH', 'DISTINCT', 'DROP', 'EACH', 'ELSE', 'END', 'ESCAPE', 'EXCEPT', 'EXCLUSIVE', 'EXISTS', 'EXPLAIN', 'FAIL', 'FOR', 'FOREIGN', 'FROM', 'FULL', 'GLOB', 'GROUP', 'HAVING', 'IF', 'IGNORE', 'IMMEDIATE', 'IN', 'INDEX', 'INDEXED', 'INITIALLY', 'INNER', 'INSERT', 'INSTEAD', 'INTERSECT', 'INTO', 'IS', 'ISNULL', 'JOIN', 'KEY', 'LEFT', 'LIKE', 'LIMIT', 'MATCH', 'NATURAL', 'NO', 'NOT', 'NOTNULL', 'NULL', 'OF', 'OFFSET', 'ON', 'OR', 'ORDER', 'OUTER', 'PLAN', 'PRAGMA', 'PRIMARY', 'QUERY', 'RAISE', 'RECURSIVE', 'REFERENCES', 'REGEXP', 'REINDEX', 'RELEASE', 'RENAME', 'REPLACE', 'RESTRICT', 'RIGHT', 'ROLLBACK', 'ROW', 'SAVEPOINT', 'SELECT', 'SET', 'TABLE', 'TEMP', 'TEMPORARY', 'THEN', 'TO', 'TRANSACTION', 'TRIGGER', 'UNION', 'UNIQUE', 'UPDATE', 'USING', 'VACUUM', 'VALUES', 'VIEW', 'VIRTUAL', 'WHEN', 'WHERE', 'WITH', 'WITHOUT']
 	for i in WORD_LIST:
 		if i.lower() == s.lower():
@@ -72,9 +75,6 @@ class addWindow(tk.Tk):
 			self.labels.append(tk.Label(self.frames[-1], text=str(i)+': '))
 			self.labels[-1].pack(side='left')
 			self.boxes.append(tk.Entry(self.frames[-1]))
-			# THESE TWO LINES ARE THE ONES THAT YOU NEED TO HAVE TO GET THE VALIDATION TO GO
-			# HOW YOU WANT IT. COPY THESE ONTO EVERYWHERE THERE ARE BOXES, EXCEPT WHERE IT'S 
-			# OBVIOUSLY UNNECESSARY. 
 			vcommand = self.boxes[-1].register(lambda s: validate(s, complaint))
 			self.boxes[-1].config(validate='key', vcmd=(vcommand, "%P"))
 			self.boxes[-1].pack(side='left')
@@ -129,6 +129,7 @@ class editButton(tk.Button):
 			self.frames = []
 			self.labels = []
 			self.boxes = []
+			self.complaint = tk.Label(window)
 			c = self.base_list.connection.cursor()
 			c.execute('pragma table_info(%s)' % sqlite3.table_name)
 			for i in [i[1] for i in c.fetchall()]:
@@ -137,6 +138,8 @@ class editButton(tk.Button):
 				self.labels.append(tk.Label(self.frames[-1], text=i+': '))
 				self.labels[-1].pack(side='left')
 				self.boxes.append(tk.Entry(self.frames[-1]))
+				vcommand = self.boxes[-1].register(lambda s: validate(s, self.complaint))
+				self.boxes[-1].config(validate='key', vcmd=(vcommand, "%P"))
 				# This gets the correct text straight from the actual table, 
 				# that's why it's so long. It selects from the list where 
 				# the last column is equal to its value at the specific index. 
@@ -149,6 +152,7 @@ class editButton(tk.Button):
 			cancel = tk.Button(choices, text='Cancel', command=window.destroy)
 			ok.pack(side='left')
 			cancel.pack(side='left')
+			self.complaint.pack()
 			choices.pack()
 	# This is just the end part of edit. 
 	def finish(self, index, window):
@@ -279,18 +283,22 @@ class DBList(tk.Frame):
 		else:
 			return None
 class BoxFrame(tk.Frame):
-	def __init__(self, root):
+	def __init__(self, root, complaint):
 		tk.Frame.__init__(self, root, pady=5)
 		self.box = tk.Entry(self)
+		vcommand = self.box.register(lambda s: validate(s, complaint))
+		self.box.config(validate='key', vcmd=(vcommand, "%P"))
 		self.box.pack(side='left')
 		tk.Frame(self, width=22).pack(side='left')
 	def get(self):
 		return self.box.get()
 class FirstBox(tk.Frame):
 		def __init__(self, root):
-			tk.Frame.__init__(self, root)
+			tk.Frame.__init__(self, root, complaint)
 			self.root = root
 			self.box = tk.Entry(self)
+			vcommand = self.box.register(lambda s: validate(s, complaint))
+			self.box.config(validate='key', vcmd=(vcommand, "%P"))
 			img = tk.PhotoImage(master = self.root, file="icon.gif")
 			self.button = tk.Button(self, image=img, command=self.root.addBox, height=15, width=15)
 			self.picture = img
@@ -308,9 +316,11 @@ class TableCreator(tk.Tk):
 		tk.Label(self, text="Table name: {}".format(table_name)).pack()
 		tk.Label(self, text="Type in the columns that will be in your \ntable, one in each box.\nPress the button for more boxes. ").pack()
 		self.boxes = []
-		self.boxes.append(FirstBox(self))
+		self.complaint = tk.Label(self)
+		self.boxes.append(FirstBox(self, self.complaint))
 		for i in self.boxes:
 			i.pack()
+		self.complaint.pack()
 		self.done = tk.Button(self, text = "Done", command = self.create)
 		self.done.pack()	
 	def create(self):
@@ -321,9 +331,11 @@ class TableCreator(tk.Tk):
 		for i in self.boxes:
 			i.pack_forget()
 		self.done.pack_forget()
-		self.boxes.append(BoxFrame(self))
+		self.complaint.pack_forget()
+		self.boxes.append(BoxFrame(self, self.complaint))
 		for i in self.boxes:
-			i.pack()		
+			i.pack()
+		self.complaint.pack()		
 		self.done.pack()
 # This is the finishing function for getCols(), which is fed from showDB(). ShowDB
 # doesn't really do that much itself, it mostly just sees what the column situation
@@ -454,8 +466,12 @@ if __name__ == "__main__":
 	start.wait_window(start)
 	name = tk.Tk()
 	tk.Label(name, text='What is the name of your table?').pack()
+	complaint = tk.Label(name)
 	box = tk.Entry(name)
+	vcommand = self.box.register(lambda s: validate(s, complaint))
+	self.box.config(validate='key', vcmd=(vcommand, "%P"))
 	box.pack()
+	complaint.pack()
 # 	I found that things that you bind() to something execute first, so I made it like this
 # 	so that it does the function and then destroys itself. 
 	button = tk.Button(name, text='OK', command=lambda: name.destroy())
